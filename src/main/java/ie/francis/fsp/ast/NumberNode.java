@@ -1,0 +1,37 @@
+/*
+ * (c) 2023 Francis McNamee
+ * */
+
+package ie.francis.fsp.ast;
+
+public class NumberNode implements Node {
+
+  private final boolean isInteger;
+  private final int intValue;
+  private final float floatValue;
+
+  public NumberNode(int intValue) {
+    this.isInteger = true;
+    this.intValue = intValue;
+    this.floatValue = 0;
+  }
+
+  public NumberNode(float floatValue) {
+    this.isInteger = false;
+    this.intValue = 0;
+    this.floatValue = floatValue;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
+  }
+
+  @Override
+  public String toString() {
+    if (this.isInteger) {
+      return String.format("IntNumber(%d)", this.intValue);
+    }
+    return String.format("FloatNumber(%f)", this.floatValue);
+  }
+}

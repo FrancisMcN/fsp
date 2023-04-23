@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'com.diffplug.spotless' version '6.18.0'
+}
+
+group 'ie.francis'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.5'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+}
+
+spotless {
+    String header = '''/*
+ * (c) 2023 Francis McNamee
+ * */
+''' + "\n"
+
+    java {
+        ratchetFrom 'origin/main'
+        googleJavaFormat()
+        licenseHeader header
+        target 'src/main/java/**/*.java'
+    }
+
+    // This avoids failing every gradle build if spotlessApply hasn't been ran yet
+    enforceCheck false
+}

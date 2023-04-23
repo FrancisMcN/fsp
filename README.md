@@ -1,2 +1,2 @@
-# fsp
-Lisp implementation in Java
+Lisp implemented in Java
+========================
