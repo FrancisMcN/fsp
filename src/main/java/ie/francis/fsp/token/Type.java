@@ -10,6 +10,7 @@ public enum Type {
   HASH,
   TICK,
   QUOTE,
+  DOT,
   SYMBOL,
   STRING,
   NUMBER,

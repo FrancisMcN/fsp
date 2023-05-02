@@ -14,6 +14,9 @@ import ie.francis.fsp.scanner.Scanner;
 public class Repl {
   public void eval(String value) {
     try {
+      if (value.equalsIgnoreCase("")) {
+        return;
+      }
       Scanner scanner = new Scanner(value);
       Parser parser = new Parser(scanner);
       Node ast = parser.parse();
@@ -22,9 +25,5 @@ public class Repl {
     } catch (SyntaxErrorException ex) {
       ex.printStackTrace();
     }
-
-    //        while (scanner.hasNext()) {
-    //            System.out.println(scanner.next());
-    //        }
   }
 }

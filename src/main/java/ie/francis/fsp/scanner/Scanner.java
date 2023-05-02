@@ -47,6 +47,9 @@ public class Scanner {
         case '`':
           ptr++;
           return new Token(Type.TICK, "`");
+        case '.':
+          ptr++;
+          return new Token(Type.DOT, ".");
         case '"':
           ptr++;
           return stringToken();

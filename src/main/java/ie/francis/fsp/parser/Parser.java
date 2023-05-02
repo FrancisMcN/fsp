@@ -8,6 +8,7 @@ import ie.francis.fsp.ast.ListNode;
 import ie.francis.fsp.ast.Node;
 import ie.francis.fsp.ast.NumberNode;
 import ie.francis.fsp.ast.StringNode;
+import ie.francis.fsp.ast.SxprNode;
 import ie.francis.fsp.ast.SymbolNode;
 import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.scanner.Scanner;
@@ -22,13 +23,61 @@ public class Parser {
     this.scanner = scanner;
   }
 
-  // expr : SYMBOL | NUMBER | STRING | list
-  // list : '(' expr* ')'
+  // sxpr : atom | list
+  // list : '(' sxpr+ ['.' sxpr]? ')'
+  // atom : SYMBOL | NUMBER | STRING | ε
+
   public Node parse() throws SyntaxErrorException {
-    return expr();
+    return sxpr();
   }
 
-  private Node expr() throws SyntaxErrorException {
+  // sxpr : atom | '(' sxpr '.' sxpr ')' | list
+  public Node sxpr() throws SyntaxErrorException {
+    Token token = scanner.peek();
+    if (token.getType() == Type.SYMBOL
+        || token.getType() == Type.NUMBER
+        || token.getType() == Type.STRING) {
+      return atom();
+    }
+
+    Token peek = scanner.peek();
+    if (peek.getType() != Type.LPAREN
+        && peek.getType() != Type.SYMBOL
+        && peek.getType() != Type.NUMBER
+        && peek.getType() != Type.STRING) {
+      throw new SyntaxErrorException(
+          String.format("expected '(', symbol, number or a string but found: %s", token.getType()));
+    }
+    return list();
+  }
+
+  // list : '(' sxpr+ ['.' sxpr]? ')'
+  private Node list() {
+    ListNode list = new ListNode();
+    scanner.next();
+    do {
+      list.addNode(sxpr());
+    } while (scanner.peek().getType() != Type.RPAREN && scanner.peek().getType() != Type.DOT);
+
+    Token token = scanner.peek();
+    if (token.getType() == Type.DOT) {
+      scanner.next();
+      SxprNode sxprNode = new SxprNode();
+      sxprNode.setCar(list.getNodes().remove(list.getNodes().size() - 1));
+      sxprNode.setCdr(sxpr());
+      list.addNode(sxprNode);
+    }
+
+    if (scanner.peek().getType() != Type.RPAREN) {
+      throw new SyntaxErrorException(String.format("expected ')', found: %s", token.getType()));
+    }
+
+    scanner.next();
+    return list;
+  }
+
+  // atom : SYMBOL | NUMBER | STRING | ε
+  private Node atom() throws SyntaxErrorException {
     Token token = scanner.peek();
     switch (token.getType()) {
       case SYMBOL:
@@ -50,25 +99,11 @@ public class Parser {
           scanner.next();
           return new StringNode(token.getValue());
         }
-      case LPAREN:
-        {
-          return list();
-        }
       default:
         {
           throw new SyntaxErrorException(
               String.format("expected symbol, number, string or list. Found: %s", token.getType()));
         }
     }
-  }
-
-  private Node list() {
-    ListNode list = new ListNode();
-    scanner.next();
-    while (scanner.peek().getType() != Type.RPAREN) {
-      list.addNode(expr());
-    }
-    scanner.next();
-    return list;
   }
 }
