@@ -15,6 +15,17 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'ie.francis.fsp.Main'
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 spotless {
     String header = '''/*
  * (c) 2023 Francis McNamee
