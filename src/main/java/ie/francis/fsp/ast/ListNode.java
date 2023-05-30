@@ -4,6 +4,8 @@
 
 package ie.francis.fsp.ast;
 
+import static ie.francis.fsp.ast.NodeType.LIST_NODE;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -26,6 +28,16 @@ public class ListNode implements Node {
   @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
+  }
+
+  @Override
+  public NodeType type() {
+    return LIST_NODE;
+  }
+
+  @Override
+  public String value() {
+    return String.format("( %s )", nodes);
   }
 
   @Override

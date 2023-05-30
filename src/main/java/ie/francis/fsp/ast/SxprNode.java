@@ -4,6 +4,8 @@
 
 package ie.francis.fsp.ast;
 
+import static ie.francis.fsp.ast.NodeType.SXPR_NODE;
+
 public class SxprNode implements Node {
 
   private Node car;
@@ -35,5 +37,15 @@ public class SxprNode implements Node {
   @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
+  }
+
+  @Override
+  public String value() {
+    return String.format("( %s %s )", this.car, this.cdr);
+  }
+
+  @Override
+  public NodeType type() {
+    return SXPR_NODE;
   }
 }

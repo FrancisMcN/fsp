@@ -4,6 +4,8 @@
 
 package ie.francis.fsp.ast;
 
+import static ie.francis.fsp.ast.NodeType.NUMBER_NODE;
+
 public class NumberNode implements Node {
 
   private final boolean isInteger;
@@ -28,10 +30,35 @@ public class NumberNode implements Node {
   }
 
   @Override
+  public NodeType type() {
+    return NUMBER_NODE;
+  }
+
+  @Override
+  public String value() {
+    if (this.isInteger) {
+      return String.format("%d", this.intValue);
+    }
+    return String.format("%f", this.floatValue);
+  }
+
+  @Override
   public String toString() {
     if (this.isInteger) {
       return String.format("IntNumber(%d)", this.intValue);
     }
     return String.format("FloatNumber(%f)", this.floatValue);
+  }
+
+  public int getIntValue() {
+    return intValue;
+  }
+
+  public float getFloatValue() {
+    return floatValue;
+  }
+
+  public boolean isInteger() {
+    return isInteger;
   }
 }

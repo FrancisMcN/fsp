@@ -5,13 +5,13 @@
 package ie.francis.fsp;
 
 import ie.francis.fsp.ast.Node;
-import ie.francis.fsp.ast.Visitor;
-import ie.francis.fsp.ast.VisitorImpl;
 import ie.francis.fsp.classloader.CustomClassLoader;
-import ie.francis.fsp.codegen.ClassGenerator;
+import ie.francis.fsp.codegen.ClassGeneratorVisitor;
 import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.scanner.Scanner;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
 public class Repl {
@@ -23,21 +23,20 @@ public class Repl {
       Scanner scanner = new Scanner(value);
       Parser parser = new Parser(scanner);
       Node ast = parser.parse();
-      Visitor visitor = new VisitorImpl();
+      ClassGeneratorVisitor visitor = new ClassGeneratorVisitor("testclass");
       ast.accept(visitor);
-      ClassGenerator generator = new ClassGenerator("testclass");
-      byte[] bytes = generator.generate();
-      //      try (FileOutputStream fos = new FileOutputStream("test.class")) {
-      //        fos.write(bytes);
-      //      }
+      byte[] bytes = visitor.generate();
+      try (FileOutputStream fos = new FileOutputStream("test.class")) {
+        fos.write(bytes);
+      }
 
-      //      System.out.println(Arrays.toString(bytes));
       Class c = new CustomClassLoader().defineClass("ie.francis.testclass", bytes);
       c.getMethod("main").invoke(null);
     } catch (SyntaxErrorException
         | NoSuchMethodException
         | IllegalAccessException
-        | InvocationTargetException ex) {
+        | InvocationTargetException
+        | IOException ex) {
       ex.printStackTrace();
     }
   }

@@ -4,6 +4,8 @@
 
 package ie.francis.fsp.ast;
 
+import static ie.francis.fsp.ast.NodeType.STRING_NODE;
+
 public class StringNode implements Node {
 
   private final String str;
@@ -15,6 +17,16 @@ public class StringNode implements Node {
   @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
+  }
+
+  @Override
+  public String value() {
+    return this.str;
+  }
+
+  @Override
+  public NodeType type() {
+    return STRING_NODE;
   }
 
   @Override

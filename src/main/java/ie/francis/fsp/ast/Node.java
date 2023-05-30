@@ -6,4 +6,8 @@ package ie.francis.fsp.ast;
 
 public interface Node {
   void accept(Visitor visitor);
+
+  NodeType type();
+
+  String value();
 }
