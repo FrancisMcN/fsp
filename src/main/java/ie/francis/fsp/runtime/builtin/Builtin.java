@@ -8,12 +8,27 @@ public class Builtin {
 
   public Builtin() {}
 
+  public static void println(int value) {
+    System.out.println(value);
+  }
+
+  public static void println(String value) {
+    System.out.println(value);
+  }
+
+  public static String concat(String... values) {
+    StringBuilder sb = new StringBuilder();
+    for (String val : values) {
+      sb.append(val);
+    }
+    return sb.toString();
+  }
+
   public static int plus(int... nums) {
     int sum = 0;
     for (int val : nums) {
       sum += val;
     }
-    System.out.println(sum);
     return sum;
   }
 
@@ -22,7 +37,6 @@ public class Builtin {
     for (int i = 1; i < nums.length; i++) {
       sum -= nums[i];
     }
-    System.out.println(sum);
     return sum;
   }
 
@@ -31,7 +45,6 @@ public class Builtin {
     for (int i = 1; i < nums.length; i++) {
       sum *= nums[i];
     }
-    System.out.println(sum);
     return sum;
   }
 
@@ -40,7 +53,6 @@ public class Builtin {
     for (int i = 1; i < nums.length; i++) {
       sum /= nums[i];
     }
-    System.out.println(sum);
     return sum;
   }
 }

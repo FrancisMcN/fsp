@@ -4,17 +4,8 @@
 
 package ie.francis.fsp.codegen;
 
-import static ie.francis.fsp.ast.NodeType.SYMBOL_NODE;
-import static org.objectweb.asm.Opcodes.ACC_MODULE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.IASTORE;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.NEWARRAY;
-import static org.objectweb.asm.Opcodes.POP;
-import static org.objectweb.asm.Opcodes.RETURN;
-import static org.objectweb.asm.Opcodes.V1_5;
+import static ie.francis.fsp.ast.NodeType.*;
+import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.fsp.ast.ListNode;
 import ie.francis.fsp.ast.Node;
@@ -23,25 +14,38 @@ import ie.francis.fsp.ast.StringNode;
 import ie.francis.fsp.ast.SxprNode;
 import ie.francis.fsp.ast.SymbolNode;
 import ie.francis.fsp.ast.Visitor;
-import java.util.HashMap;
+import ie.francis.fsp.sym.FunctionSymbol;
+import ie.francis.fsp.sym.Symbol;
+import ie.francis.fsp.sym.SymbolTable;
+import ie.francis.fsp.sym.SymbolType;
 import java.util.List;
-import java.util.Map;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 public class ClassGeneratorVisitor implements Visitor {
 
-  private Map<String, String> symbolTable;
+  private final SymbolTable symbolTable;
   private final ClassWriter cw;
-  private MethodVisitor mv;
+  private final MethodVisitor mv;
+
+  private boolean isString;
 
   public ClassGeneratorVisitor(String className) {
-    symbolTable = new HashMap<>();
-    symbolTable.put("+", "plus");
-    symbolTable.put("-", "minus");
-    symbolTable.put("*", "multiply");
-    symbolTable.put("/", "divide");
+    symbolTable = new SymbolTable();
+    symbolTable.put(
+        "+", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.plus", "([I)I"));
+    symbolTable.put(
+        "-", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.minus", "([I)I"));
+    symbolTable.put(
+        "*", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.multiply", "([I)I"));
+    symbolTable.put(
+        "/", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.divide", "([I)I"));
+    symbolTable.put(
+        "concat",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.concat",
+            "([Ljava/lang/String;)Ljava/lang/String;"));
 
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     cw.visit(
@@ -54,6 +58,8 @@ public class ClassGeneratorVisitor implements Visitor {
 
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "()V", null, null);
     mv.visitCode();
+    isString = false;
+    //        mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
   }
 
   @Override
@@ -66,27 +72,39 @@ public class ClassGeneratorVisitor implements Visitor {
   public void visit(ListNode listNode) {
     List<Node> nodes = listNode.getNodes();
     Node first = nodes.remove(0);
-    if (first.type() == SYMBOL_NODE && symbolTable.containsKey(first.value())) {
+    String symbolName = first.value();
+    if (first.type() == SYMBOL_NODE && symbolTable.contains(symbolName)) {
       mv.visitLdcInsn(nodes.size());
-      mv.visitIntInsn(NEWARRAY, Opcodes.T_INT);
+      Node second = nodes.get(0);
+      if (second.type() == NUMBER_NODE) {
+        mv.visitIntInsn(NEWARRAY, Opcodes.T_INT);
+      } else if (second.type() == STRING_NODE) {
+        mv.visitTypeInsn(ANEWARRAY, "java/lang/String");
+      }
       mv.visitInsn(DUP);
     }
     for (int i = 0; i < nodes.size(); i++) {
       mv.visitLdcInsn(i);
       nodes.get(i).accept(this);
-      mv.visitInsn(IASTORE);
-      mv.visitInsn(DUP);
+      if (nodes.get(i).type() == NUMBER_NODE) {
+        mv.visitInsn(IASTORE);
+      } else if (nodes.get(i).type() == STRING_NODE) {
+        isString = true;
+        mv.visitInsn(AASTORE);
+      } else {
+        mv.visitInsn(IASTORE);
+      }
+      if (i < nodes.size() - 1) {
+        mv.visitInsn(DUP);
+      }
     }
-    if (first.type() == SYMBOL_NODE && symbolTable.containsKey(first.value())) {
-      mv.visitMethodInsn(
-          INVOKESTATIC,
-          "ie/francis/fsp/runtime/builtin/Builtin",
-          symbolTable.get(first.value()),
-          "([I)I");
-      mv.visitInsn(POP);
-      mv.visitInsn(RETURN);
-      mv.visitMaxs(0, 0);
-      mv.visitEnd();
+    if (first.type() == SYMBOL_NODE) {
+      Symbol symbol = symbolTable.get(first.value());
+      if (symbol.type() == SymbolType.FUNCTION) {
+        String owner = symbol.name().split("\\.")[0];
+        String functionName = symbol.name().split("\\.")[1];
+        mv.visitMethodInsn(INVOKESTATIC, owner, functionName, symbol.descriptor(), false);
+      }
     }
   }
 
@@ -97,7 +115,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(StringNode stringNode) {
-    System.out.println(stringNode);
+    mv.visitLdcInsn(stringNode.value());
   }
 
   @Override
@@ -106,6 +124,16 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   public byte[] generate() {
+    String descriptor = "(I)V";
+    if (isString) {
+      descriptor = "(Ljava/lang/String;)V";
+    }
+    mv.visitMethodInsn(
+        INVOKESTATIC, "ie/francis/fsp/runtime/builtin/Builtin", "println", descriptor, false);
+    //        mv.visitInsn(POP);
+    mv.visitInsn(RETURN);
+    mv.visitMaxs(0, 0);
+    mv.visitEnd();
     cw.visitEnd();
     return cw.toByteArray();
   }

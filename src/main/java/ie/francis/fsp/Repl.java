@@ -23,14 +23,14 @@ public class Repl {
       Scanner scanner = new Scanner(value);
       Parser parser = new Parser(scanner);
       Node ast = parser.parse();
-      ClassGeneratorVisitor visitor = new ClassGeneratorVisitor("testclass");
+      ClassGeneratorVisitor visitor = new ClassGeneratorVisitor("Test");
       ast.accept(visitor);
       byte[] bytes = visitor.generate();
-      try (FileOutputStream fos = new FileOutputStream("test.class")) {
+      try (FileOutputStream fos = new FileOutputStream("Test.class")) {
         fos.write(bytes);
       }
 
-      Class c = new CustomClassLoader().defineClass("ie.francis.testclass", bytes);
+      Class c = new CustomClassLoader().defineClass("ie.francis.Test", bytes);
       c.getMethod("main").invoke(null);
     } catch (SyntaxErrorException
         | NoSuchMethodException
