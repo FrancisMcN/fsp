@@ -8,11 +8,11 @@ public class Builtin {
 
   public Builtin() {}
 
-  public static void println(int value) {
+  public static void print(int value) {
     System.out.println(value);
   }
 
-  public static void println(String value) {
+  public static void print(String value) {
     System.out.println(value);
   }
 

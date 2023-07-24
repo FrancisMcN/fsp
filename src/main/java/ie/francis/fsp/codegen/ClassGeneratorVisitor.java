@@ -7,13 +7,7 @@ package ie.francis.fsp.codegen;
 import static ie.francis.fsp.ast.NodeType.*;
 import static org.objectweb.asm.Opcodes.*;
 
-import ie.francis.fsp.ast.ListNode;
-import ie.francis.fsp.ast.Node;
-import ie.francis.fsp.ast.NumberNode;
-import ie.francis.fsp.ast.StringNode;
-import ie.francis.fsp.ast.SxprNode;
-import ie.francis.fsp.ast.SymbolNode;
-import ie.francis.fsp.ast.Visitor;
+import ie.francis.fsp.ast.*;
 import ie.francis.fsp.sym.FunctionSymbol;
 import ie.francis.fsp.sym.Symbol;
 import ie.francis.fsp.sym.SymbolTable;
@@ -46,6 +40,13 @@ public class ClassGeneratorVisitor implements Visitor {
         new FunctionSymbol(
             "ie/francis/fsp/runtime/builtin/Builtin.concat",
             "([Ljava/lang/String;)Ljava/lang/String;"));
+    symbolTable.put(
+        "sprint",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.print", "(Ljava/lang/String;)V"));
+
+    symbolTable.put(
+        "iprint", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.print", "(I)V"));
 
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     cw.visit(
@@ -72,40 +73,86 @@ public class ClassGeneratorVisitor implements Visitor {
   public void visit(ListNode listNode) {
     List<Node> nodes = listNode.getNodes();
     Node first = nodes.remove(0);
-    String symbolName = first.value();
-    if (first.type() == SYMBOL_NODE && symbolTable.contains(symbolName)) {
-      mv.visitLdcInsn(nodes.size());
-      Node second = nodes.get(0);
-      if (second.type() == NUMBER_NODE) {
-        mv.visitIntInsn(NEWARRAY, Opcodes.T_INT);
-      } else if (second.type() == STRING_NODE) {
-        mv.visitTypeInsn(ANEWARRAY, "java/lang/String");
+
+    if (isFunction(first)) {
+      Symbol symbol = symbolTable.get(first.value());
+      if (isVariadic(symbol)) {
+        compileArrayOfArguments(nodes);
+      } else {
+        compileArguments(nodes);
       }
-      mv.visitInsn(DUP);
+      compileFunctionCall(symbol);
     }
+  }
+
+  private void compileFunctionCall(Symbol symbol) {
+    String owner = symbol.name().split("\\.")[0];
+    String functionName = symbol.name().split("\\.")[1];
+    mv.visitMethodInsn(INVOKESTATIC, owner, functionName, symbol.descriptor(), false);
+  }
+
+  private void compileArguments(List<Node> nodes) {
+    for (Node node : nodes) {
+      node.accept(this);
+    }
+  }
+
+  private void compileArrayOfArguments(List<Node> nodes) {
+    // Specify array size first
+    mv.visitLdcInsn(nodes.size());
+    // Specify array type based on type of first argument
+    Node firstArgument = nodes.get(0);
+    switch (firstArgument.type()) {
+      case NUMBER_NODE:
+        mv.visitIntInsn(NEWARRAY, Opcodes.T_INT);
+        break;
+      case STRING_NODE:
+        mv.visitTypeInsn(ANEWARRAY, "java/lang/String");
+        break;
+      case SYMBOL_NODE:
+      case LIST_NODE:
+      case SXPR_NODE:
+    }
+    mv.visitInsn(DUP);
+
     for (int i = 0; i < nodes.size(); i++) {
+
       mv.visitLdcInsn(i);
       nodes.get(i).accept(this);
-      if (nodes.get(i).type() == NUMBER_NODE) {
-        mv.visitInsn(IASTORE);
-      } else if (nodes.get(i).type() == STRING_NODE) {
-        isString = true;
-        mv.visitInsn(AASTORE);
-      } else {
-        mv.visitInsn(IASTORE);
+
+      switch (nodes.get(i).type()) {
+        case NUMBER_NODE:
+          // Store int in array of arguments
+          mv.visitInsn(IASTORE);
+          break;
+        case STRING_NODE:
+        case SYMBOL_NODE:
+        case LIST_NODE:
+          // Store reference in array of arguments
+          mv.visitInsn(AASTORE);
+          break;
+        case SXPR_NODE:
+          break;
       }
       if (i < nodes.size() - 1) {
         mv.visitInsn(DUP);
       }
     }
+  }
+
+  private boolean isFunction(Node first) {
+    String value = first.value();
     if (first.type() == SYMBOL_NODE) {
-      Symbol symbol = symbolTable.get(first.value());
-      if (symbol.type() == SymbolType.FUNCTION) {
-        String owner = symbol.name().split("\\.")[0];
-        String functionName = symbol.name().split("\\.")[1];
-        mv.visitMethodInsn(INVOKESTATIC, owner, functionName, symbol.descriptor(), false);
+      if (symbolTable.contains(value)) {
+        Symbol symbol = symbolTable.get(value);
+        return symbol.type() == SymbolType.FUNCTION;
       }
     }
+    return false;
+  }
+
+  private boolean isVariadic(Symbol function) {
+    return function.descriptor().startsWith("([");
   }
 
   @Override
@@ -124,13 +171,13 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   public byte[] generate() {
-    String descriptor = "(I)V";
-    if (isString) {
-      descriptor = "(Ljava/lang/String;)V";
-    }
-    mv.visitMethodInsn(
-        INVOKESTATIC, "ie/francis/fsp/runtime/builtin/Builtin", "println", descriptor, false);
-    //        mv.visitInsn(POP);
+    //    String descriptor = "(I)V";
+    //    if (isString) {
+    //      descriptor = "(Ljava/lang/String;)V";
+    //    }
+    //    mv.visitMethodInsn(
+    //        INVOKESTATIC, "ie/francis/fsp/runtime/builtin/Builtin", "println", descriptor, false);
+    //    //        mv.visitInsn(POP);
     mv.visitInsn(RETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();

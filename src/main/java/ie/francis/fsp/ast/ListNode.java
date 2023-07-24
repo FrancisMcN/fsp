@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ListNode implements Node {
 
-  private List<Node> nodes;
+  private final List<Node> nodes;
 
   public ListNode() {
     nodes = new LinkedList<>();
