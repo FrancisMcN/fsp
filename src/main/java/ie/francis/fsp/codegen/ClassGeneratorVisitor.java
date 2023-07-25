@@ -23,30 +23,37 @@ public class ClassGeneratorVisitor implements Visitor {
   private final ClassWriter cw;
   private final MethodVisitor mv;
 
-  private boolean isString;
-
   public ClassGeneratorVisitor(String className) {
     symbolTable = new SymbolTable();
     symbolTable.put(
-        "+", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.plus", "([I)I"));
+        "+",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.plus",
+            "([Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
-        "-", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.minus", "([I)I"));
+        "-",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.minus",
+            "([Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
-        "*", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.multiply", "([I)I"));
+        "*",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.multiply",
+            "([Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
-        "/", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.divide", "([I)I"));
+        "/",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.divide",
+            "([Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
         "concat",
         new FunctionSymbol(
             "ie/francis/fsp/runtime/builtin/Builtin.concat",
-            "([Ljava/lang/String;)Ljava/lang/String;"));
+            "([Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
-        "sprint",
+        "println",
         new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.print", "(Ljava/lang/String;)V"));
-
-    symbolTable.put(
-        "iprint", new FunctionSymbol("ie/francis/fsp/runtime/builtin/Builtin.print", "(I)V"));
+            "ie/francis/fsp/runtime/builtin/Builtin.println", "(Ljava/lang/Object;)V"));
 
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     cw.visit(
@@ -59,8 +66,6 @@ public class ClassGeneratorVisitor implements Visitor {
 
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "()V", null, null);
     mv.visitCode();
-    isString = false;
-    //        mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
   }
 
   @Override
@@ -100,40 +105,16 @@ public class ClassGeneratorVisitor implements Visitor {
   private void compileArrayOfArguments(List<Node> nodes) {
     // Specify array size first
     mv.visitLdcInsn(nodes.size());
-    // Specify array type based on type of first argument
-    Node firstArgument = nodes.get(0);
-    switch (firstArgument.type()) {
-      case NUMBER_NODE:
-        mv.visitIntInsn(NEWARRAY, Opcodes.T_INT);
-        break;
-      case STRING_NODE:
-        mv.visitTypeInsn(ANEWARRAY, "java/lang/String");
-        break;
-      case SYMBOL_NODE:
-      case LIST_NODE:
-      case SXPR_NODE:
-    }
+    // Create a new array of Objects
+    mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
     mv.visitInsn(DUP);
 
     for (int i = 0; i < nodes.size(); i++) {
 
       mv.visitLdcInsn(i);
       nodes.get(i).accept(this);
+      mv.visitInsn(AASTORE);
 
-      switch (nodes.get(i).type()) {
-        case NUMBER_NODE:
-          // Store int in array of arguments
-          mv.visitInsn(IASTORE);
-          break;
-        case STRING_NODE:
-        case SYMBOL_NODE:
-        case LIST_NODE:
-          // Store reference in array of arguments
-          mv.visitInsn(AASTORE);
-          break;
-        case SXPR_NODE:
-          break;
-      }
       if (i < nodes.size() - 1) {
         mv.visitInsn(DUP);
       }
@@ -158,6 +139,8 @@ public class ClassGeneratorVisitor implements Visitor {
   @Override
   public void visit(NumberNode numberNode) {
     mv.visitLdcInsn(numberNode.getIntValue());
+    mv.visitMethodInsn(
+        INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
   }
 
   @Override
@@ -171,13 +154,12 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   public byte[] generate() {
-    //    String descriptor = "(I)V";
-    //    if (isString) {
-    //      descriptor = "(Ljava/lang/String;)V";
-    //    }
     //    mv.visitMethodInsn(
-    //        INVOKESTATIC, "ie/francis/fsp/runtime/builtin/Builtin", "println", descriptor, false);
-    //    //        mv.visitInsn(POP);
+    //        INVOKESTATIC,
+    //        "ie/francis/fsp/runtime/builtin/Builtin",
+    //        "println",
+    //        "(Ljava/lang/Object;)V",
+    //        false);
     mv.visitInsn(RETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();

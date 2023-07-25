@@ -8,50 +8,46 @@ public class Builtin {
 
   public Builtin() {}
 
-  public static void print(int value) {
+  public static void println(Object value) {
     System.out.println(value);
   }
 
-  public static void print(String value) {
-    System.out.println(value);
-  }
-
-  public static String concat(String... values) {
+  public static Object concat(Object... values) {
     StringBuilder sb = new StringBuilder();
-    for (String val : values) {
+    for (Object val : values) {
       sb.append(val);
     }
     return sb.toString();
   }
 
-  public static int plus(int... nums) {
-    int sum = 0;
-    for (int val : nums) {
-      sum += val;
+  public static Object plus(Object... nums) {
+    Integer sum = 0;
+    for (Object o : nums) {
+      sum += ((Integer) o);
     }
     return sum;
   }
 
-  public static int minus(int... nums) {
-    int sum = nums[0];
+  public static Object minus(Object... nums) {
+    Integer sum = (Integer) nums[0];
     for (int i = 1; i < nums.length; i++) {
-      sum -= nums[i];
+      sum -= ((Integer) nums[i]);
     }
     return sum;
   }
 
-  public static int multiply(int... nums) {
-    int sum = nums[0];
+  public static Object multiply(Object... nums) {
+    Integer sum = (Integer) nums[0];
     for (int i = 1; i < nums.length; i++) {
-      sum *= nums[i];
+      sum *= ((Integer) nums[i]);
     }
     return sum;
   }
 
-  public static int divide(int... nums) {
-    int sum = nums[0];
+  public static Object divide(Object... nums) {
+    Integer sum = (Integer) nums[0];
     for (int i = 1; i < nums.length; i++) {
-      sum /= nums[i];
+      sum /= ((Integer) nums[i]);
     }
     return sum;
   }
