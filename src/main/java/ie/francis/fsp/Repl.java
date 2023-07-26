@@ -31,7 +31,10 @@ public class Repl {
       }
 
       Class c = new CustomClassLoader().defineClass("ie.francis.Test", bytes);
-      c.getMethod("main").invoke(null);
+      Object o = c.getMethod("run").invoke(null);
+      if (o != null) {
+        System.out.println(o);
+      }
     } catch (SyntaxErrorException
         | NoSuchMethodException
         | IllegalAccessException

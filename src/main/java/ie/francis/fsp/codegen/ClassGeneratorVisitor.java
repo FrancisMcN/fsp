@@ -64,8 +64,9 @@ public class ClassGeneratorVisitor implements Visitor {
         "java/lang/Object",
         new String[] {});
 
-    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "()V", null, null);
+    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", "()Ljava/lang/Object;", null, null);
     mv.visitCode();
+    mv.visitInsn(ACONST_NULL);
   }
 
   @Override
@@ -160,7 +161,7 @@ public class ClassGeneratorVisitor implements Visitor {
     //        "println",
     //        "(Ljava/lang/Object;)V",
     //        false);
-    mv.visitInsn(RETURN);
+    mv.visitInsn(ARETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();
     cw.visitEnd();
