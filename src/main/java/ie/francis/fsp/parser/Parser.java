@@ -23,6 +23,7 @@ public class Parser {
     this.scanner = scanner;
   }
 
+  // form : sxpr | 'sxpr
   // sxpr : atom | list
   // list : '(' sxpr+ ['.' sxpr]? ')'
   // atom : SYMBOL | NUMBER | STRING | ε
@@ -31,9 +32,18 @@ public class Parser {
     return sxpr();
   }
 
-  // sxpr : atom | '(' sxpr '.' sxpr ')' | list
+  // sxpr : 'sxpr | atom | '(' sxpr '.' sxpr ')' | list
   public Node sxpr() throws SyntaxErrorException {
     Token token = scanner.peek();
+
+    if (token.getType() == Type.QUOTE) {
+      scanner.next();
+      ListNode node = new ListNode();
+      node.addNode(new SymbolNode("quote"));
+      node.addNode(sxpr());
+      return node;
+    }
+
     if (token.getType() == Type.SYMBOL
         || token.getType() == Type.NUMBER
         || token.getType() == Type.STRING) {

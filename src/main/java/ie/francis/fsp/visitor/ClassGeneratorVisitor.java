@@ -2,7 +2,7 @@
  * (c) 2023 Francis McNamee
  * */
 
-package ie.francis.fsp.codegen;
+package ie.francis.fsp.visitor;
 
 import static ie.francis.fsp.ast.NodeType.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -12,10 +12,14 @@ import ie.francis.fsp.sym.FunctionSymbol;
 import ie.francis.fsp.sym.Symbol;
 import ie.francis.fsp.sym.SymbolTable;
 import ie.francis.fsp.sym.SymbolType;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.LocalVariablesSorter;
 
 public class ClassGeneratorVisitor implements Visitor {
 
@@ -23,7 +27,14 @@ public class ClassGeneratorVisitor implements Visitor {
   private final ClassWriter cw;
   private final MethodVisitor mv;
 
+  private int quoteDepth = 0;
+  private final Map<String, Integer> vars;
+
+  private final LocalVariablesSorter lvs;
+
   public ClassGeneratorVisitor(String className) {
+
+    vars = new HashMap<>();
     symbolTable = new SymbolTable();
     symbolTable.put(
         "+",
@@ -65,6 +76,7 @@ public class ClassGeneratorVisitor implements Visitor {
         new String[] {});
 
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", "()Ljava/lang/Object;", null, null);
+    lvs = new LocalVariablesSorter(0, "()Ljava/lang/Object;", mv);
     mv.visitCode();
     mv.visitInsn(ACONST_NULL);
   }
@@ -78,9 +90,16 @@ public class ClassGeneratorVisitor implements Visitor {
   @Override
   public void visit(ListNode listNode) {
     List<Node> nodes = listNode.getNodes();
-    Node first = nodes.remove(0);
 
-    if (isFunction(first)) {
+    if (this.quoteDepth > 0) {
+      compileQuotedList(nodes);
+      return;
+    }
+
+    Node first = nodes.remove(0);
+    if (isSpecialForm(first)) {
+      compileSpecialForm(first.value(), nodes);
+    } else if (isFunction(first)) {
       Symbol symbol = symbolTable.get(first.value());
       if (isVariadic(symbol)) {
         compileArrayOfArguments(nodes);
@@ -90,6 +109,51 @@ public class ClassGeneratorVisitor implements Visitor {
       compileFunctionCall(symbol);
     }
   }
+
+  private void compileQuotedList(List<Node> nodes) {
+
+    mv.visitTypeInsn(Opcodes.NEW, "java/util/LinkedList");
+    mv.visitInsn(DUP);
+    mv.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedList", "<init>", "()V", false);
+
+    int id = lvs.newLocal(Type.getType("Ljava/util/List"));
+    mv.visitVarInsn(ASTORE, id);
+
+    for (Node node : nodes) {
+      mv.visitVarInsn(ALOAD, id);
+      node.accept(this);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/util/LinkedList", "add", "(Ljava/lang/Object;)Z", false);
+      mv.visitInsn(POP);
+    }
+    mv.visitVarInsn(ALOAD, id);
+  }
+
+  private void compileSpecialForm(String value, List<Node> nodes) {
+    switch (value) {
+      case "quote":
+        compileQuoteSpecialForm(nodes);
+        break;
+      case "if":
+        compileIfSpecialForm(nodes);
+        break;
+      case "progn":
+        compilePrognSpecialForm(nodes);
+        break;
+    }
+  }
+
+  private void compileQuoteSpecialForm(List<Node> nodes) {
+    this.quoteDepth++;
+    for (Node node : nodes) {
+      node.accept(this);
+    }
+    this.quoteDepth--;
+  }
+
+  private void compileIfSpecialForm(List<Node> nodes) {}
+
+  private void compilePrognSpecialForm(List<Node> nodes) {}
 
   private void compileFunctionCall(Symbol symbol) {
     String owner = symbol.name().split("\\.")[0];
@@ -122,6 +186,19 @@ public class ClassGeneratorVisitor implements Visitor {
     }
   }
 
+  private boolean isSpecialForm(Node first) {
+    String value = first.value();
+    if (first.type() == SYMBOL_NODE) {
+      switch (value) {
+        case "quote":
+        case "if":
+        case "progn":
+          return true;
+      }
+    }
+    return false;
+  }
+
   private boolean isFunction(Node first) {
     String value = first.value();
     if (first.type() == SYMBOL_NODE) {
@@ -151,16 +228,10 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(SymbolNode symbolNode) {
-    System.out.println(symbolNode);
+    mv.visitLdcInsn(symbolNode.value());
   }
 
   public byte[] generate() {
-    //    mv.visitMethodInsn(
-    //        INVOKESTATIC,
-    //        "ie/francis/fsp/runtime/builtin/Builtin",
-    //        "println",
-    //        "(Ljava/lang/Object;)V",
-    //        false);
     mv.visitInsn(ARETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();

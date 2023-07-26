@@ -6,10 +6,10 @@ package ie.francis.fsp;
 
 import ie.francis.fsp.ast.Node;
 import ie.francis.fsp.classloader.CustomClassLoader;
-import ie.francis.fsp.codegen.ClassGeneratorVisitor;
 import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.scanner.Scanner;
+import ie.francis.fsp.visitor.ClassGeneratorVisitor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -23,6 +23,9 @@ public class Repl {
       Scanner scanner = new Scanner(value);
       Parser parser = new Parser(scanner);
       Node ast = parser.parse();
+      //      StringVisitor stringVisitor = new StringVisitor();
+      //      ast.accept(stringVisitor);
+      //      System.out.println("[ " + stringVisitor + " ]");
       ClassGeneratorVisitor visitor = new ClassGeneratorVisitor("Test");
       ast.accept(visitor);
       byte[] bytes = visitor.generate();
