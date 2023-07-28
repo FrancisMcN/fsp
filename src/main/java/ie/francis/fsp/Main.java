@@ -19,7 +19,11 @@ public class Main {
       if (input.equalsIgnoreCase("exit")) {
         break;
       }
-      repl.eval(input);
+      if (args.length > 0) {
+        repl.eval(input, true);
+      } else {
+        repl.eval(input);
+      }
     }
   }
 }

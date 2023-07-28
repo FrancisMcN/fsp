@@ -15,7 +15,12 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
 public class Repl {
+
   public void eval(String value) {
+    eval(value, false);
+  }
+
+  public void eval(String value, boolean store) {
     try {
       if (value.equalsIgnoreCase("")) {
         return;
@@ -29,8 +34,10 @@ public class Repl {
       ClassGeneratorVisitor visitor = new ClassGeneratorVisitor("Test");
       ast.accept(visitor);
       byte[] bytes = visitor.generate();
-      try (FileOutputStream fos = new FileOutputStream("Test.class")) {
-        fos.write(bytes);
+      if (store) {
+        try (FileOutputStream fos = new FileOutputStream("Test.class")) {
+          fos.write(bytes);
+        }
       }
 
       Class c = new CustomClassLoader().defineClass("ie.francis.Test", bytes);
