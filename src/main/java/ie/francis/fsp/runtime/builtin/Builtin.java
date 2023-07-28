@@ -20,6 +20,21 @@ public class Builtin {
     return sb.toString();
   }
 
+  public static Object lessThan(Object a, Object b) {
+    return ((Integer) a).compareTo((Integer) b) < 0;
+  }
+
+  public static Object greaterThan(Object a, Object b) {
+    return ((Integer) a).compareTo((Integer) b) > 0;
+  }
+
+  public static Object equals(Object a, Object b) {
+    if (a instanceof Integer) {
+      return ((Integer) a).compareTo((Integer) b) == 0;
+    }
+    return a.equals(b);
+  }
+
   public static Object plus(Object... nums) {
     Integer sum = 0;
     for (Object o : nums) {

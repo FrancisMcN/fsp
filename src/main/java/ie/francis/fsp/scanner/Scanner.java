@@ -101,6 +101,9 @@ public class Scanner {
     while (ptr < input.length() && !isSpecialOrWhitespace(input.charAt(ptr))) {
       sb.append(input.charAt(ptr++));
     }
+    if (sb.toString().equals("true") || sb.toString().equals("false")) {
+      return new Token(Type.BOOLEAN, sb.toString());
+    }
     return new Token(Type.SYMBOL, sb.toString());
   }
 

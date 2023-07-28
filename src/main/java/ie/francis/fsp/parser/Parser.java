@@ -4,12 +4,7 @@
 
 package ie.francis.fsp.parser;
 
-import ie.francis.fsp.ast.ListNode;
-import ie.francis.fsp.ast.Node;
-import ie.francis.fsp.ast.NumberNode;
-import ie.francis.fsp.ast.StringNode;
-import ie.francis.fsp.ast.SxprNode;
-import ie.francis.fsp.ast.SymbolNode;
+import ie.francis.fsp.ast.*;
 import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.scanner.Scanner;
 import ie.francis.fsp.token.Token;
@@ -26,7 +21,7 @@ public class Parser {
   // form : sxpr | 'sxpr
   // sxpr : atom | list
   // list : '(' sxpr+ ['.' sxpr]? ')'
-  // atom : SYMBOL | NUMBER | STRING | ε
+  // atom : SYMBOL | NUMBER | STRING | BOOLEAN | ε
 
   public Node parse() throws SyntaxErrorException {
     return sxpr();
@@ -46,7 +41,8 @@ public class Parser {
 
     if (token.getType() == Type.SYMBOL
         || token.getType() == Type.NUMBER
-        || token.getType() == Type.STRING) {
+        || token.getType() == Type.STRING
+        || token.getType() == Type.BOOLEAN) {
       return atom();
     }
 
@@ -54,7 +50,8 @@ public class Parser {
     if (peek.getType() != Type.LPAREN
         && peek.getType() != Type.SYMBOL
         && peek.getType() != Type.NUMBER
-        && peek.getType() != Type.STRING) {
+        && peek.getType() != Type.STRING
+        && peek.getType() != Type.BOOLEAN) {
       throw new SyntaxErrorException(
           String.format("expected '(', symbol, number or a string but found: %s", token.getType()));
     }
@@ -86,7 +83,7 @@ public class Parser {
     return list;
   }
 
-  // atom : SYMBOL | NUMBER | STRING | ε
+  // atom : SYMBOL | NUMBER | STRING | BOOLEAN | ε
   private Node atom() throws SyntaxErrorException {
     Token token = scanner.peek();
     switch (token.getType()) {
@@ -108,6 +105,11 @@ public class Parser {
         {
           scanner.next();
           return new StringNode(token.getValue());
+        }
+      case BOOLEAN:
+        {
+          scanner.next();
+          return new BooleanNode(Boolean.parseBoolean(token.getValue()));
         }
       default:
         {

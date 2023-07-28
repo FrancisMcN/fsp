@@ -49,6 +49,11 @@ public class StringVisitor implements Visitor {
     sb.append(symbolNode.value());
   }
 
+  @Override
+  public void visit(BooleanNode booleanNode) {
+    sb.append(booleanNode.value());
+  }
+
   public String toString() {
     return sb.toString();
   }

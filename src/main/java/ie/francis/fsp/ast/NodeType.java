@@ -9,5 +9,7 @@ public enum NodeType {
   SYMBOL_NODE,
   NUMBER_NODE,
   STRING_NODE,
-  SXPR_NODE
+  SXPR_NODE,
+
+  BOOLEAN_NODE
 }

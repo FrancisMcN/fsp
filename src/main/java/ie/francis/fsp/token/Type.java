@@ -14,5 +14,6 @@ public enum Type {
   SYMBOL,
   STRING,
   NUMBER,
+  BOOLEAN,
   EOF
 }

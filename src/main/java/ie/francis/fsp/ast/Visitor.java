@@ -15,4 +15,6 @@ public interface Visitor {
   void visit(StringNode stringNode);
 
   void visit(SymbolNode symbolNode);
+
+  void visit(BooleanNode booleanNode);
 }

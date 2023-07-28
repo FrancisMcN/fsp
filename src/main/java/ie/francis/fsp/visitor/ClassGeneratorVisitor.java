@@ -15,10 +15,7 @@ import ie.francis.fsp.sym.SymbolType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
 public class ClassGeneratorVisitor implements Visitor {
@@ -56,6 +53,21 @@ public class ClassGeneratorVisitor implements Visitor {
         new FunctionSymbol(
             "ie/francis/fsp/runtime/builtin/Builtin.divide",
             "([Ljava/lang/Object;)Ljava/lang/Object;"));
+    symbolTable.put(
+        "<",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.lessThan",
+            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
+    symbolTable.put(
+        ">",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.greaterThan",
+            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
+    symbolTable.put(
+        "=",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.equals",
+            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
         "concat",
         new FunctionSymbol(
@@ -151,7 +163,23 @@ public class ClassGeneratorVisitor implements Visitor {
     this.quoteDepth--;
   }
 
-  private void compileIfSpecialForm(List<Node> nodes) {}
+  private void compileIfSpecialForm(List<Node> nodes) {
+
+    //    // Compile condition, expecting a ListNode
+    //    nodes.get(0).accept(this);
+    //
+    //    Label l = new Label();
+    //    mv.visitLabel(l);
+    //    mv.visitJumpInsn(IFNE, l);
+    //    // Compile true block
+    //    nodes.get(1).accept(this);
+    //
+    //    // Compile false block if it exists
+    //    if (nodes.size() > 2) {
+    //      nodes.get(2).accept(this);
+    //    }
+
+  }
 
   private void compilePrognSpecialForm(List<Node> nodes) {}
 
@@ -229,6 +257,17 @@ public class ClassGeneratorVisitor implements Visitor {
   @Override
   public void visit(SymbolNode symbolNode) {
     mv.visitLdcInsn(symbolNode.value());
+  }
+
+  @Override
+  public void visit(BooleanNode booleanNode) {
+    mv.visitLdcInsn(booleanNode.value());
+    mv.visitMethodInsn(
+        INVOKESTATIC,
+        "java/lang/Boolean",
+        "valueOf",
+        "(Ljava/lang/String;)Ljava/lang/Boolean;",
+        false);
   }
 
   public byte[] generate() {
