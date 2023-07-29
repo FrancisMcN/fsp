@@ -1,0 +1,18 @@
+(if (< 1 2)
+	(println "correct 1 < 2")
+	(println "not correct"))
+
+(println "hello world")
+
+(if (= '(+ 1 2 3) '(+ 1 2 3 4))
+    (println "not correct")
+    (println "correct (+ 1 2 3) doesn't equal (+ 1 2 3 4)"))
+
+(if (= (quote a) 'a)
+    (println "correct (quote a) and 'a are equivalent (identical after parsing)"))
+
+(println "hello world (again)")
+
+(println true)
+
+(println false)
