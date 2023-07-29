@@ -18,13 +18,17 @@ public class Parser {
     this.scanner = scanner;
   }
 
-  // form : sxpr | 'sxpr
+  // prog : sxpr*
   // sxpr : atom | list
   // list : '(' sxpr+ ['.' sxpr]? ')'
   // atom : SYMBOL | NUMBER | STRING | BOOLEAN | ε
 
   public Node parse() throws SyntaxErrorException {
-    return sxpr();
+    ProgramNode programNode = new ProgramNode();
+    while (scanner.peek().getType() != Type.EOF) {
+      programNode.addNode(sxpr());
+    }
+    return programNode;
   }
 
   // sxpr : 'sxpr | atom | '(' sxpr '.' sxpr ')' | list

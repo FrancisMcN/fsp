@@ -5,6 +5,7 @@
 package ie.francis.fsp.ast;
 
 public interface Visitor {
+  void visit(ProgramNode programNode);
 
   void visit(SxprNode sxprNode);
 

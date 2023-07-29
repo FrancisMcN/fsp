@@ -16,6 +16,13 @@ public class StringVisitor implements Visitor {
   }
 
   @Override
+  public void visit(ProgramNode programNode) {
+    for (Node node : programNode.getNodes()) {
+      node.accept(this);
+    }
+  }
+
+  @Override
   public void visit(SxprNode sxprNode) {
     sxprNode.getCar().accept(this);
     sxprNode.getCdr().accept(this);

@@ -8,8 +8,9 @@ public class Builtin {
 
   public Builtin() {}
 
-  public static void println(Object value) {
+  public static Object println(Object value) {
     System.out.println(value);
+    return null;
   }
 
   public static Object concat(Object... values) {

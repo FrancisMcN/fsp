@@ -76,7 +76,8 @@ public class ClassGeneratorVisitor implements Visitor {
     symbolTable.put(
         "println",
         new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.println", "(Ljava/lang/Object;)V"));
+            "ie/francis/fsp/runtime/builtin/Builtin.println",
+            "(Ljava/lang/Object;)Ljava/lang/Object;"));
 
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     cw.visit(
@@ -90,7 +91,13 @@ public class ClassGeneratorVisitor implements Visitor {
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", "()Ljava/lang/Object;", null, null);
     lvs = new LocalVariablesSorter(0, "()Ljava/lang/Object;", mv);
     mv.visitCode();
-    mv.visitInsn(ACONST_NULL);
+  }
+
+  @Override
+  public void visit(ProgramNode programNode) {
+    for (Node node : programNode.getNodes()) {
+      node.accept(this);
+    }
   }
 
   @Override
@@ -165,20 +172,30 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compileIfSpecialForm(List<Node> nodes) {
 
-    //    // Compile condition, expecting a ListNode
-    //    nodes.get(0).accept(this);
-    //
-    //    Label l = new Label();
-    //    mv.visitLabel(l);
-    //    mv.visitJumpInsn(IFNE, l);
-    //    // Compile true block
-    //    nodes.get(1).accept(this);
-    //
-    //    // Compile false block if it exists
-    //    if (nodes.size() > 2) {
-    //      nodes.get(2).accept(this);
-    //    }
+    // Compile condition, expecting a ListNode
+    nodes.get(0).accept(this);
 
+    mv.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
+    mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);
+    Label startOfElseLabel = new Label();
+    Label endOfIfLabel = new Label();
+    // Compare result of condition
+    mv.visitJumpInsn(IFEQ, startOfElseLabel);
+
+    // Compile true block
+    nodes.get(1).accept(this);
+
+    // Jump past the false block after entering the true block if it exists
+    mv.visitJumpInsn(GOTO, endOfIfLabel);
+    mv.visitLabel(startOfElseLabel);
+    //
+    // Compile false block if it exists
+    if (nodes.size() > 2) {
+      nodes.get(2).accept(this);
+    } else {
+      mv.visitInsn(ACONST_NULL);
+    }
+    mv.visitLabel(endOfIfLabel);
   }
 
   private void compilePrognSpecialForm(List<Node> nodes) {}

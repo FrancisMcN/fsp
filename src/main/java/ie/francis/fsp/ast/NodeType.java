@@ -5,6 +5,7 @@
 package ie.francis.fsp.ast;
 
 public enum NodeType {
+  PROGRAM_NODE,
   LIST_NODE,
   SYMBOL_NODE,
   NUMBER_NODE,
