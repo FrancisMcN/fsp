@@ -74,6 +74,21 @@ public class ClassGeneratorVisitor implements Visitor {
             "ie/francis/fsp/runtime/builtin/Builtin.concat",
             "([Ljava/lang/Object;)Ljava/lang/Object;"));
     symbolTable.put(
+        "read",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.read",
+            "(Ljava/lang/Object;)Ljava/lang/Object;"));
+    symbolTable.put(
+        "car",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.car",
+            "(Ljava/lang/Object;)Ljava/lang/Object;"));
+    symbolTable.put(
+        "cdr",
+        new FunctionSymbol(
+            "ie/francis/fsp/runtime/builtin/Builtin.cdr",
+            "(Ljava/lang/Object;)Ljava/lang/Object;"));
+    symbolTable.put(
         "println",
         new FunctionSymbol(
             "ie/francis/fsp/runtime/builtin/Builtin.println",
@@ -131,9 +146,10 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compileQuotedList(List<Node> nodes) {
 
-    mv.visitTypeInsn(Opcodes.NEW, "java/util/LinkedList");
+    mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/type/LispList");
     mv.visitInsn(DUP);
-    mv.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedList", "<init>", "()V", false);
+    mv.visitMethodInsn(
+        INVOKESPECIAL, "ie/francis/fsp/runtime/type/LispList", "<init>", "()V", false);
 
     int id = lvs.newLocal(Type.getType("Ljava/util/List"));
     mv.visitVarInsn(ASTORE, id);
@@ -142,7 +158,11 @@ public class ClassGeneratorVisitor implements Visitor {
       mv.visitVarInsn(ALOAD, id);
       node.accept(this);
       mv.visitMethodInsn(
-          INVOKEVIRTUAL, "java/util/LinkedList", "add", "(Ljava/lang/Object;)Z", false);
+          INVOKEVIRTUAL,
+          "ie/francis/fsp/runtime/type/LispList",
+          "add",
+          "(Ljava/lang/Object;)Z",
+          false);
       mv.visitInsn(POP);
     }
     mv.visitVarInsn(ALOAD, id);

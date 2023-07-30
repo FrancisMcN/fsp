@@ -4,6 +4,10 @@
 
 package ie.francis.fsp.runtime.builtin;
 
+import ie.francis.fsp.parser.Parser;
+import ie.francis.fsp.runtime.type.LispList;
+import ie.francis.fsp.scanner.Scanner;
+
 public class Builtin {
 
   public Builtin() {}
@@ -11,6 +15,20 @@ public class Builtin {
   public static Object println(Object value) {
     System.out.println(value);
     return null;
+  }
+
+  public static Object read(Object value) {
+    Scanner scanner = new Scanner(value.toString());
+    Parser parser = new Parser(scanner);
+    return parser.parse();
+  }
+
+  public static Object car(Object value) {
+    return ((LispList<Object>) value).car();
+  }
+
+  public static Object cdr(Object value) {
+    return ((LispList<Object>) value).cdr();
   }
 
   public static Object concat(Object... values) {

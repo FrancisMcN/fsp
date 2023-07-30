@@ -31,7 +31,7 @@ public class SxprNode implements Node {
 
   @Override
   public String toString() {
-    return String.format("SxprNode(%s, %s)", this.car, this.cdr);
+    return String.format("%s %s", this.car, this.cdr);
   }
 
   @Override
@@ -41,7 +41,7 @@ public class SxprNode implements Node {
 
   @Override
   public String value() {
-    return String.format("( %s %s )", this.car, this.cdr);
+    return String.format("%s %s", this.car, this.cdr);
   }
 
   @Override

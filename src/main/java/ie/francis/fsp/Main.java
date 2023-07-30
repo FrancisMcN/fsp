@@ -28,7 +28,11 @@ public class Main {
       if (input.equalsIgnoreCase("exit")) {
         break;
       }
-      repl.eval(input, true);
+      try {
+        repl.eval(input, true);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
     }
   }
 }

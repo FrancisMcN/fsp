@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ListNode implements Node {
 
-  private final List<Node> nodes;
+  private List<Node> nodes;
 
   public ListNode() {
     nodes = new LinkedList<>();
@@ -23,6 +23,10 @@ public class ListNode implements Node {
 
   public List<Node> getNodes() {
     return nodes;
+  }
+
+  public void setNodes(List<Node> nodes) {
+    this.nodes = nodes;
   }
 
   @Override
@@ -43,11 +47,11 @@ public class ListNode implements Node {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("List(");
+    sb.append("(");
     for (int i = 0; i < this.nodes.size(); i++) {
       sb.append(nodes.get(i).toString());
       if (i < this.nodes.size() - 1) {
-        sb.append(", ");
+        sb.append(" ");
       }
     }
     sb.append(")");

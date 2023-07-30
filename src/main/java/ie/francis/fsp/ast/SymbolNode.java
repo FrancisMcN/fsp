@@ -31,6 +31,6 @@ public class SymbolNode implements Node {
 
   @Override
   public String toString() {
-    return String.format("Symbol(%s)", this.symbol);
+    return this.symbol;
   }
 }

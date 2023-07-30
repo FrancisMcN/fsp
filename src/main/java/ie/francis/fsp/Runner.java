@@ -10,6 +10,8 @@ import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.scanner.Scanner;
 import ie.francis.fsp.visitor.ClassGeneratorVisitor;
+import ie.francis.fsp.visitor.MacroExpanderVisitor;
+import ie.francis.fsp.visitor.StringVisitor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -22,9 +24,14 @@ public class Runner {
     Scanner scanner = new Scanner(data);
     Parser parser = new Parser(scanner);
     Node prog = parser.parse();
-    ClassGeneratorVisitor visitor = new ClassGeneratorVisitor("Test");
-    prog.accept(visitor);
-    byte[] bytes = visitor.generate();
+    MacroExpanderVisitor macroVisitor = new MacroExpanderVisitor();
+    prog.accept(macroVisitor);
+    StringVisitor stringVisitor = new StringVisitor();
+    prog.accept(stringVisitor);
+    //    System.out.println(stringVisitor);
+    ClassGeneratorVisitor compileVisitor = new ClassGeneratorVisitor("Test");
+    prog.accept(compileVisitor);
+    byte[] bytes = compileVisitor.generate();
     try {
       if (store) {
         try (FileOutputStream fos = new FileOutputStream("Test.class")) {

@@ -63,7 +63,7 @@ public class Parser {
   }
 
   // list : '(' sxpr+ ['.' sxpr]? ')'
-  private Node list() {
+  public Node list() {
     ListNode list = new ListNode();
     scanner.next();
     do {

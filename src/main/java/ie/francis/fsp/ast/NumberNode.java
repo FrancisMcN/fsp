@@ -45,9 +45,9 @@ public class NumberNode implements Node {
   @Override
   public String toString() {
     if (this.isInteger) {
-      return String.format("IntNumber(%d)", this.intValue);
+      return String.format("%d", this.intValue);
     }
-    return String.format("FloatNumber(%f)", this.floatValue);
+    return String.format("%f", this.floatValue);
   }
 
   public int getIntValue() {

@@ -36,6 +36,11 @@ public class ProgramNode implements Node {
 
   @Override
   public String value() {
+    return toString();
+  }
+
+  @Override
+  public String toString() {
     StringBuilder sb = new StringBuilder();
     for (Node node : this.nodes) {
       sb.append(node.toString());
