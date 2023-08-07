@@ -2,24 +2,24 @@
  * (c) 2023 Francis McNamee
  * */
 
-package ie.francis.fsp.sym;
+package ie.francis.fsp.environment;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class SymbolTable {
 
-  Map<String, Symbol> table;
+  Map<String, Entry> table;
 
   public SymbolTable() {
     table = new HashMap<>();
   }
 
-  public Symbol get(String name) {
+  public Entry get(String name) {
     return table.get(name);
   }
 
-  public void put(String name, Symbol symbol) {
+  public void put(String name, Entry symbol) {
     table.put(name, symbol);
   }
 

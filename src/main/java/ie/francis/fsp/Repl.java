@@ -6,6 +6,12 @@ package ie.francis.fsp;
 
 public class Repl {
 
+  private final Runner runner;
+
+  public Repl() {
+    this.runner = new Runner();
+  }
+
   public void eval(String value) {
     eval(value, false);
   }
@@ -14,6 +20,6 @@ public class Repl {
     if (value.equalsIgnoreCase("")) {
       return;
     }
-    new Runner().compileAndRun(value, true);
+    runner.compileAndRun(value, true);
   }
 }

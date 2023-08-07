@@ -2,9 +2,9 @@
  * (c) 2023 Francis McNamee
  * */
 
-package ie.francis.fsp.sym;
+package ie.francis.fsp.environment;
 
-public enum SymbolType {
+public enum EntryType {
   STRING,
   NUMBER,
   FUNCTION,

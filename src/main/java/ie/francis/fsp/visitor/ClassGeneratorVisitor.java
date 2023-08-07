@@ -8,102 +8,48 @@ import static ie.francis.fsp.ast.NodeType.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.fsp.ast.*;
-import ie.francis.fsp.sym.FunctionSymbol;
-import ie.francis.fsp.sym.Symbol;
-import ie.francis.fsp.sym.SymbolTable;
-import ie.francis.fsp.sym.SymbolType;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import ie.francis.fsp.environment.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
 public class ClassGeneratorVisitor implements Visitor {
 
-  private final SymbolTable symbolTable;
+  private final String className;
+  private final Environment environment;
   private final ClassWriter cw;
-  private final MethodVisitor mv;
+  private MethodVisitor mv;
 
   private int quoteDepth = 0;
   private final Map<String, Integer> vars;
 
-  private final LocalVariablesSorter lvs;
+  private LocalVariablesSorter lvs;
 
-  public ClassGeneratorVisitor(String className) {
+  public ClassGeneratorVisitor(String className, List<String> parameters, Environment environment) {
 
-    vars = new HashMap<>();
-    symbolTable = new SymbolTable();
-    symbolTable.put(
-        "+",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.plus",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "-",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.minus",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "*",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.multiply",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "/",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.divide",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "<",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.lessThan",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        ">",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.greaterThan",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "=",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.equals",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "concat",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.concat",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "read",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.read",
-            "(Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "car",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.car",
-            "(Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "cdr",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.cdr",
-            "(Ljava/lang/Object;)Ljava/lang/Object;"));
-    symbolTable.put(
-        "println",
-        new FunctionSymbol(
-            "ie/francis/fsp/runtime/builtin/Builtin.println",
-            "(Ljava/lang/Object;)Ljava/lang/Object;"));
+    this.className = className;
+    this.environment = environment;
+    this.vars = new HashMap<>();
 
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     cw.visit(
         V1_5,
         Opcodes.ACC_PUBLIC + ACC_MODULE,
-        String.format("ie/francis/%s", className),
+        String.format("%s", className),
         null,
         "java/lang/Object",
         new String[] {});
 
-    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", "()Ljava/lang/Object;", null, null);
+    String descriptor =
+        "(" + "Ljava/lang/Object;".repeat(parameters.size()) + ")Ljava/lang/Object;";
+
+    for (int i = 0; i < parameters.size(); i++) {
+      vars.put(parameters.get(i), i);
+    }
+
+    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", descriptor, null, null);
     lvs = new LocalVariablesSorter(0, "()Ljava/lang/Object;", mv);
     mv.visitCode();
   }
@@ -134,7 +80,7 @@ public class ClassGeneratorVisitor implements Visitor {
     if (isSpecialForm(first)) {
       compileSpecialForm(first.value(), nodes);
     } else if (isFunction(first)) {
-      Symbol symbol = symbolTable.get(first.value());
+      Entry symbol = environment.get(first.value());
       if (isVariadic(symbol)) {
         compileArrayOfArguments(nodes);
       } else {
@@ -173,6 +119,9 @@ public class ClassGeneratorVisitor implements Visitor {
       case "quote":
         compileQuoteSpecialForm(nodes);
         break;
+      case "func":
+        compileFuncSpecialForm(nodes);
+        break;
       case "if":
         compileIfSpecialForm(nodes);
         break;
@@ -188,6 +137,56 @@ public class ClassGeneratorVisitor implements Visitor {
       node.accept(this);
     }
     this.quoteDepth--;
+  }
+
+  private void compileFuncSpecialForm(List<Node> nodes) {
+
+    String functionName = nodes.get(0).value();
+    String className = functionName.substring(0, 1).toUpperCase() + functionName.substring(1);
+
+    List<String> args = new ArrayList<>();
+    List<Node> parameters = ((ListNode) nodes.get(1)).getNodes();
+    for (Node value : parameters) {
+      args.add(value.value());
+    }
+    ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
+    Node code = nodes.get(2);
+    code.accept(cgv);
+    cgv.write();
+
+    String descriptor =
+        "(" + "Ljava/lang/Object;".repeat(parameters.size()) + ")Ljava/lang/Object;";
+
+    environment.put(functionName, new FunctionEntry(className + ".run", descriptor));
+
+    environment.loadClass(className, cgv.generate());
+
+    mv.visitLdcInsn("a");
+    //
+    //    ListNode parameters = (ListNode) nodes.get(1);
+    //    for (int i = 0; i < parameters.getNodes().size(); i++) {
+    //      Node node = parameters.getNodes().get(i);
+    //      vars.put(node.value(), i);
+    //    }
+    //
+    //    StringBuilder functionDescriptor = new StringBuilder();
+    //    functionDescriptor.append("(");
+    //    int argCount = parameters.getNodes().size();
+    //    functionDescriptor.append("Ljava/lang/Object;".repeat(argCount));
+    //    functionDescriptor.append(")Ljava/lang/Object;");
+    //    MethodVisitor existingMethodVisitor = mv;
+    //    LocalVariablesSorter existingLocalVariableSorter = lvs;
+    //    mv =
+    //        cw.visitMethod(
+    //            ACC_PUBLIC + ACC_STATIC, functionName, functionDescriptor.toString(), null, null);
+    //    lvs = new LocalVariablesSorter(0, functionDescriptor.toString(), mv);
+    //    mv.visitCode();
+    //    nodes.get(2).accept(this);
+    //    mv.visitInsn(ARETURN);
+    //    mv.visitMaxs(0, 0);
+    //    mv.visitEnd();
+    //    mv = existingMethodVisitor;
+    //    lvs = existingLocalVariableSorter;
   }
 
   private void compileIfSpecialForm(List<Node> nodes) {
@@ -220,7 +219,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compilePrognSpecialForm(List<Node> nodes) {}
 
-  private void compileFunctionCall(Symbol symbol) {
+  private void compileFunctionCall(Entry symbol) {
     String owner = symbol.name().split("\\.")[0];
     String functionName = symbol.name().split("\\.")[1];
     mv.visitMethodInsn(INVOKESTATIC, owner, functionName, symbol.descriptor(), false);
@@ -256,6 +255,7 @@ public class ClassGeneratorVisitor implements Visitor {
     if (first.type() == SYMBOL_NODE) {
       switch (value) {
         case "quote":
+        case "func":
         case "if":
         case "progn":
           return true;
@@ -267,15 +267,15 @@ public class ClassGeneratorVisitor implements Visitor {
   private boolean isFunction(Node first) {
     String value = first.value();
     if (first.type() == SYMBOL_NODE) {
-      if (symbolTable.contains(value)) {
-        Symbol symbol = symbolTable.get(value);
-        return symbol.type() == SymbolType.FUNCTION;
+      if (environment.contains(value)) {
+        Entry symbol = environment.get(value);
+        return symbol.type() == EntryType.FUNCTION;
       }
     }
     return false;
   }
 
-  private boolean isVariadic(Symbol function) {
+  private boolean isVariadic(Entry function) {
     return function.descriptor().startsWith("([");
   }
 
@@ -293,7 +293,10 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(SymbolNode symbolNode) {
-    mv.visitLdcInsn(symbolNode.value());
+    if (environment.contains(symbolNode.value())) {
+      Entry var = environment.get(symbolNode.value());
+      lvs.visitVarInsn(ALOAD, vars.get(symbolNode.value()));
+    }
   }
 
   @Override
@@ -313,5 +316,17 @@ public class ClassGeneratorVisitor implements Visitor {
     mv.visitEnd();
     cw.visitEnd();
     return cw.toByteArray();
+  }
+
+  public void write() {
+    try (FileOutputStream fos = new FileOutputStream(this.className + ".class")) {
+      fos.write(this.generate());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public String getClassName() {
+    return className;
   }
 }

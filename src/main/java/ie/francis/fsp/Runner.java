@@ -5,20 +5,26 @@
 package ie.francis.fsp;
 
 import ie.francis.fsp.ast.Node;
-import ie.francis.fsp.classloader.CustomClassLoader;
+import ie.francis.fsp.environment.Environment;
 import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.scanner.Scanner;
 import ie.francis.fsp.visitor.ClassGeneratorVisitor;
 import ie.francis.fsp.visitor.MacroExpanderVisitor;
 import ie.francis.fsp.visitor.StringVisitor;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 
 public class Runner {
 
-  public Runner() {}
+  private final Environment environment;
+  private int runs;
+
+  public Runner() {
+    this.environment = new Environment();
+    this.environment.loadBuiltins();
+    this.runs = 0;
+  }
 
   public void compileAndRun(String data, boolean store) {
     Scanner scanner = new Scanner(data);
@@ -29,17 +35,17 @@ public class Runner {
     StringVisitor stringVisitor = new StringVisitor();
     prog.accept(stringVisitor);
     //    System.out.println(stringVisitor);
-    ClassGeneratorVisitor compileVisitor = new ClassGeneratorVisitor("Test");
+    ClassGeneratorVisitor compileVisitor =
+        new ClassGeneratorVisitor(
+            "Test" + String.valueOf(this.runs), new ArrayList<>(), environment);
     prog.accept(compileVisitor);
     byte[] bytes = compileVisitor.generate();
     try {
       if (store) {
-        try (FileOutputStream fos = new FileOutputStream("Test.class")) {
-          fos.write(bytes);
-        }
+        compileVisitor.write();
       }
 
-      Class c = new CustomClassLoader().defineClass("ie.francis.Test", bytes);
+      Class c = environment.loadClass(compileVisitor.getClassName(), bytes);
       Object o = c.getMethod("run").invoke(null);
       if (o != null) {
         System.out.println(o);
@@ -47,9 +53,9 @@ public class Runner {
     } catch (SyntaxErrorException
         | NoSuchMethodException
         | IllegalAccessException
-        | InvocationTargetException
-        | IOException ex) {
+        | InvocationTargetException ex) {
       ex.printStackTrace();
     }
+    runs++;
   }
 }
