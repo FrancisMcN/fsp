@@ -149,15 +149,16 @@ public class ClassGeneratorVisitor implements Visitor {
     for (Node value : parameters) {
       args.add(value.value());
     }
-    ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
-    Node code = nodes.get(2);
-    code.accept(cgv);
-    cgv.write();
 
     String descriptor =
         "(" + "Ljava/lang/Object;".repeat(parameters.size()) + ")Ljava/lang/Object;";
 
     environment.put(functionName, new FunctionEntry(className + ".run", descriptor));
+
+    ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
+    Node code = nodes.get(2);
+    code.accept(cgv);
+    cgv.write();
 
     environment.loadClass(className, cgv.generate());
 
@@ -293,8 +294,8 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(SymbolNode symbolNode) {
-    if (environment.contains(symbolNode.value())) {
-      Entry var = environment.get(symbolNode.value());
+    if (vars.containsKey(symbolNode.value())) {
+      // Entry var = environment.get(symbolNode.value());
       lvs.visitVarInsn(ALOAD, vars.get(symbolNode.value()));
     }
   }
