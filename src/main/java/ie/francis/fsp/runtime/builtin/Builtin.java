@@ -5,6 +5,7 @@
 package ie.francis.fsp.runtime.builtin;
 
 import ie.francis.fsp.parser.Parser;
+import ie.francis.fsp.runtime.helper.ConsBuilder;
 import ie.francis.fsp.runtime.type.Cons;
 import ie.francis.fsp.scanner.Scanner;
 
@@ -29,6 +30,14 @@ public class Builtin {
 
   public static Object cdr(Object value) {
     return ((Cons) value).getCdr();
+  }
+
+  public static Object list(Object... values) {
+    ConsBuilder consBuilder = new ConsBuilder();
+    for (Object val : values) {
+      consBuilder.add(val);
+    }
+    return consBuilder.getCons();
   }
 
   public static Object concat(Object... values) {

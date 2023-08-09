@@ -93,6 +93,11 @@ public class Environment {
             "ie/francis/fsp/runtime/builtin/Builtin.cdr",
             "(Ljava/lang/Object;)Ljava/lang/Object;"));
     env.put(
+        "list",
+        new Function(
+            "ie/francis/fsp/runtime/builtin/Builtin.list",
+            "([Ljava/lang/Object;)Ljava/lang/Object;"));
+    env.put(
         "println",
         new Function(
             "ie/francis/fsp/runtime/builtin/Builtin.println",
