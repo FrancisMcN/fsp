@@ -9,6 +9,8 @@ import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.fsp.ast.*;
 import ie.francis.fsp.environment.*;
+import ie.francis.fsp.runtime.type.DataType;
+import ie.francis.fsp.runtime.type.Function;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -80,7 +82,7 @@ public class ClassGeneratorVisitor implements Visitor {
     if (isSpecialForm(first)) {
       compileSpecialForm(first.value(), nodes);
     } else if (isFunction(first)) {
-      Entry symbol = environment.get(first.value());
+      ie.francis.fsp.runtime.type.Type symbol = environment.get(first.value());
       if (isVariadic(symbol)) {
         compileArrayOfArguments(nodes);
       } else {
@@ -92,12 +94,12 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compileQuotedList(List<Node> nodes) {
 
-    mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/type/LispList");
+    mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/helper/ConsBuilder");
     mv.visitInsn(DUP);
     mv.visitMethodInsn(
-        INVOKESPECIAL, "ie/francis/fsp/runtime/type/LispList", "<init>", "()V", false);
+        INVOKESPECIAL, "ie/francis/fsp/runtime/helper/ConsBuilder", "<init>", "()V", false);
 
-    int id = lvs.newLocal(Type.getType("Ljava/util/List"));
+    int id = lvs.newLocal(Type.getType("Lie/francis/fsp/runtime/helper/ConsBuilder"));
     mv.visitVarInsn(ASTORE, id);
 
     for (Node node : nodes) {
@@ -105,13 +107,18 @@ public class ClassGeneratorVisitor implements Visitor {
       node.accept(this);
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
-          "ie/francis/fsp/runtime/type/LispList",
+          "ie/francis/fsp/runtime/helper/ConsBuilder",
           "add",
-          "(Ljava/lang/Object;)Z",
+          "(Ljava/lang/Object;)V",
           false);
-      mv.visitInsn(POP);
     }
     mv.visitVarInsn(ALOAD, id);
+    mv.visitMethodInsn(
+        INVOKEVIRTUAL,
+        "ie/francis/fsp/runtime/helper/ConsBuilder",
+        "getCons",
+        "()Lie/francis/fsp/runtime/type/Cons;",
+        false);
   }
 
   private void compileSpecialForm(String value, List<Node> nodes) {
@@ -153,7 +160,7 @@ public class ClassGeneratorVisitor implements Visitor {
     String descriptor =
         "(" + "Ljava/lang/Object;".repeat(parameters.size()) + ")Ljava/lang/Object;";
 
-    environment.put(functionName, new FunctionEntry(className + ".run", descriptor));
+    environment.put(functionName, new Function(className + ".run", descriptor));
 
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
     Node code = nodes.get(2);
@@ -161,33 +168,7 @@ public class ClassGeneratorVisitor implements Visitor {
     cgv.write();
 
     environment.loadClass(className, cgv.generate());
-
-    mv.visitLdcInsn("a");
-    //
-    //    ListNode parameters = (ListNode) nodes.get(1);
-    //    for (int i = 0; i < parameters.getNodes().size(); i++) {
-    //      Node node = parameters.getNodes().get(i);
-    //      vars.put(node.value(), i);
-    //    }
-    //
-    //    StringBuilder functionDescriptor = new StringBuilder();
-    //    functionDescriptor.append("(");
-    //    int argCount = parameters.getNodes().size();
-    //    functionDescriptor.append("Ljava/lang/Object;".repeat(argCount));
-    //    functionDescriptor.append(")Ljava/lang/Object;");
-    //    MethodVisitor existingMethodVisitor = mv;
-    //    LocalVariablesSorter existingLocalVariableSorter = lvs;
-    //    mv =
-    //        cw.visitMethod(
-    //            ACC_PUBLIC + ACC_STATIC, functionName, functionDescriptor.toString(), null, null);
-    //    lvs = new LocalVariablesSorter(0, functionDescriptor.toString(), mv);
-    //    mv.visitCode();
-    //    nodes.get(2).accept(this);
-    //    mv.visitInsn(ARETURN);
-    //    mv.visitMaxs(0, 0);
-    //    mv.visitEnd();
-    //    mv = existingMethodVisitor;
-    //    lvs = existingLocalVariableSorter;
+    mv.visitInsn(ACONST_NULL);
   }
 
   private void compileIfSpecialForm(List<Node> nodes) {
@@ -208,7 +189,7 @@ public class ClassGeneratorVisitor implements Visitor {
     // Jump past the false block after entering the true block if it exists
     mv.visitJumpInsn(GOTO, endOfIfLabel);
     mv.visitLabel(startOfElseLabel);
-    //
+
     // Compile false block if it exists
     if (nodes.size() > 2) {
       nodes.get(2).accept(this);
@@ -220,7 +201,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compilePrognSpecialForm(List<Node> nodes) {}
 
-  private void compileFunctionCall(Entry symbol) {
+  private void compileFunctionCall(ie.francis.fsp.runtime.type.Type symbol) {
     String owner = symbol.name().split("\\.")[0];
     String functionName = symbol.name().split("\\.")[1];
     mv.visitMethodInsn(INVOKESTATIC, owner, functionName, symbol.descriptor(), false);
@@ -269,14 +250,14 @@ public class ClassGeneratorVisitor implements Visitor {
     String value = first.value();
     if (first.type() == SYMBOL_NODE) {
       if (environment.contains(value)) {
-        Entry symbol = environment.get(value);
-        return symbol.type() == EntryType.FUNCTION;
+        ie.francis.fsp.runtime.type.Type symbol = environment.get(value);
+        return symbol.type() == DataType.FUNCTION;
       }
     }
     return false;
   }
 
-  private boolean isVariadic(Entry function) {
+  private boolean isVariadic(ie.francis.fsp.runtime.type.Type function) {
     return function.descriptor().startsWith("([");
   }
 
@@ -294,8 +275,11 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(SymbolNode symbolNode) {
+    if (quoteDepth > 0) {
+      mv.visitLdcInsn(symbolNode.value());
+      return;
+    }
     if (vars.containsKey(symbolNode.value())) {
-      // Entry var = environment.get(symbolNode.value());
       lvs.visitVarInsn(ALOAD, vars.get(symbolNode.value()));
     }
   }

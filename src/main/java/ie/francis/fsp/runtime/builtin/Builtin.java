@@ -5,7 +5,7 @@
 package ie.francis.fsp.runtime.builtin;
 
 import ie.francis.fsp.parser.Parser;
-import ie.francis.fsp.runtime.type.LispList;
+import ie.francis.fsp.runtime.type.Cons;
 import ie.francis.fsp.scanner.Scanner;
 
 public class Builtin {
@@ -24,11 +24,11 @@ public class Builtin {
   }
 
   public static Object car(Object value) {
-    return ((LispList<Object>) value).car();
+    return ((Cons) value).getCar();
   }
 
   public static Object cdr(Object value) {
-    return ((LispList<Object>) value).cdr();
+    return ((Cons) value).getCdr();
   }
 
   public static Object concat(Object... values) {
