@@ -4,9 +4,11 @@
 
 package ie.francis.fsp.runtime.type;
 
-import static ie.francis.fsp.runtime.type.DataType.CONS;
+import ie.francis.fsp.ast.Visitor;
 
-public class Cons implements Type {
+import static ie.francis.fsp.runtime.type.Type.CONS;
+
+public class Cons implements DataType {
 
   private Object car;
   private Cons cdr;
@@ -30,7 +32,7 @@ public class Cons implements Type {
   }
 
   @Override
-  public DataType type() {
+  public Type type() {
     return CONS;
   }
 
@@ -60,6 +62,11 @@ public class Cons implements Type {
     return sb.toString();
   }
 
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
+  }
+
   public String str(Object object) {
     String objectString;
     if (object == null) {
@@ -68,5 +75,15 @@ public class Cons implements Type {
       objectString = object.toString();
     }
     return objectString;
+  }
+
+  public int size() {
+    int size = 1;
+    Cons temp = cdr;
+    while (temp != null) {
+      size++;
+      temp = temp.getCdr();
+    }
+    return size;
   }
 }

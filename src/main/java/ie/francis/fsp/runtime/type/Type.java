@@ -4,12 +4,12 @@
 
 package ie.francis.fsp.runtime.type;
 
-public interface Type {
-  DataType type();
-
-  String name();
-
-  String descriptor();
-
-  String toString();
+public enum Type {
+  STRING,
+  SYMBOL,
+  NUMBER,
+  FUNCTION,
+  MACRO,
+  CONS,
+  BOOL
 }

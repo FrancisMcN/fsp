@@ -4,9 +4,16 @@
 
 package ie.francis.fsp.runtime.type;
 
-public enum DataType {
-  STRING,
-  NUMBER,
-  FUNCTION,
-  CONS
+import ie.francis.fsp.ast.Visitor;
+
+public interface DataType {
+  Type type();
+
+  String name();
+
+  String descriptor();
+
+  String toString();
+
+  void accept(Visitor visitor);
 }

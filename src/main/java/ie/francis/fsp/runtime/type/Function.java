@@ -4,9 +4,11 @@
 
 package ie.francis.fsp.runtime.type;
 
-import static ie.francis.fsp.runtime.type.DataType.FUNCTION;
+import ie.francis.fsp.ast.Visitor;
 
-public class Function implements Type {
+import static ie.francis.fsp.runtime.type.Type.FUNCTION;
+
+public class Function implements DataType {
 
   private final String name;
   private final String descriptor;
@@ -17,7 +19,7 @@ public class Function implements Type {
   }
 
   @Override
-  public DataType type() {
+  public Type type() {
     return FUNCTION;
   }
 
@@ -34,5 +36,10 @@ public class Function implements Type {
   @Override
   public String toString() {
     return String.format("#%s", name);
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 }

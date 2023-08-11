@@ -6,13 +6,15 @@ package ie.francis.fsp.environment;
 
 import ie.francis.fsp.classloader.ParentCustomClassLoader;
 import ie.francis.fsp.runtime.type.Function;
-import ie.francis.fsp.runtime.type.Type;
+import ie.francis.fsp.runtime.type.DataType;
+import ie.francis.fsp.runtime.type.Symbol;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class Environment {
 
-  private final Map<String, Type> env;
+  private final Map<String, DataType> env;
   private final ParentCustomClassLoader classLoader;
 
   public Environment() {
@@ -20,20 +22,24 @@ public class Environment {
     classLoader = new ParentCustomClassLoader();
   }
 
-  public Type get(String name) {
-    return this.env.get(name);
+  public DataType get(Symbol symbol) {
+    return this.env.get(symbol.name());
   }
 
-  public void put(String name, Type data) {
+  public void put(String name, DataType data) {
     this.env.put(name, data);
   }
 
-  public boolean contains(String name) {
-    return this.env.containsKey(name);
+  public boolean contains(Symbol symbol) {
+    return this.env.containsKey(symbol.name());
   }
 
   public Class<?> loadClass(String className, byte[] bytes) {
     return classLoader.defineClass(className, bytes);
+  }
+
+  public Class<?> loadClass(String className) {
+    return classLoader.getClassloaders().get(className).getClazz();
   }
 
   public void loadBuiltins() {
