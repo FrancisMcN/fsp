@@ -45,7 +45,8 @@ public class Runner {
         compileVisitor.write();
       }
 
-      Class c = environment.loadClass(compileVisitor.getClassName(), bytes);
+      Class<?> c = environment.loadClass(compileVisitor.getClassName(), bytes);
+
       Object o = c.getMethod("run").invoke(null);
       if (o != null) {
         System.out.println(o);

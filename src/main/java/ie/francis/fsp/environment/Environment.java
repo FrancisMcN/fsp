@@ -4,7 +4,7 @@
 
 package ie.francis.fsp.environment;
 
-import ie.francis.fsp.classloader.CustomClassLoader;
+import ie.francis.fsp.classloader.ParentCustomClassLoader;
 import ie.francis.fsp.runtime.type.Function;
 import ie.francis.fsp.runtime.type.Type;
 import java.util.HashMap;
@@ -13,11 +13,11 @@ import java.util.Map;
 public class Environment {
 
   private final Map<String, Type> env;
-  private final CustomClassLoader classLoader;
+  private final ParentCustomClassLoader classLoader;
 
   public Environment() {
     env = new HashMap<>();
-    classLoader = new CustomClassLoader();
+    classLoader = new ParentCustomClassLoader();
   }
 
   public Type get(String name) {
@@ -32,7 +32,7 @@ public class Environment {
     return this.env.containsKey(name);
   }
 
-  public Class loadClass(String className, byte[] bytes) {
+  public Class<?> loadClass(String className, byte[] bytes) {
     return classLoader.defineClass(className, bytes);
   }
 

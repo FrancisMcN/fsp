@@ -168,6 +168,7 @@ public class ClassGeneratorVisitor implements Visitor {
     cgv.write();
 
     environment.loadClass(className, cgv.generate());
+
     mv.visitInsn(ACONST_NULL);
   }
 
