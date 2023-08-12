@@ -4,15 +4,14 @@
 
 package ie.francis.fsp;
 
-import ie.francis.fsp.ast.Node;
 import ie.francis.fsp.environment.Environment;
 import ie.francis.fsp.exception.SyntaxErrorException;
 //import ie.francis.fsp.parser.Parser;
-import ie.francis.fsp.parser.Parser2;
+import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.runtime.type.DataType;
 import ie.francis.fsp.scanner.Scanner;
 //import ie.francis.fsp.visitor.ClassGeneratorVisitor;
-import ie.francis.fsp.visitor.ClassGeneratorVisitor2;
+import ie.francis.fsp.visitor.ClassGeneratorVisitor;
 //import ie.francis.fsp.visitor.MacroExpanderVisitor;
 //import ie.francis.fsp.visitor.StringVisitor;
 import java.lang.reflect.InvocationTargetException;
@@ -32,28 +31,14 @@ public class Runner {
 
   public void compileAndRun(String data, boolean store) {
     Scanner scanner = new Scanner(data);
-    Parser2 parser = new Parser2(scanner);
+    Parser parser = new Parser(scanner);
     List<DataType> prog = parser.parse();
-//    System.out.println(prog);
-    ClassGeneratorVisitor2 compileVisitor =
-            new ClassGeneratorVisitor2(
+    ClassGeneratorVisitor compileVisitor =
+            new ClassGeneratorVisitor(
                     "Test" + String.valueOf(this.runs), new ArrayList<>(), environment);
     for (DataType expression : prog) {
       expression.accept(compileVisitor);
     }
-
-//    Scanner scanner = new Scanner(data);
-//    Parser parser = new Parser(scanner);
-//    Node prog = parser.parse();
-//    MacroExpanderVisitor macroVisitor = new MacroExpanderVisitor();
-//    prog.accept(macroVisitor);
-//    StringVisitor stringVisitor = new StringVisitor();
-//    prog.accept(stringVisitor);
-    //    System.out.println(stringVisitor);
-//    ClassGeneratorVisitor compileVisitor =
-//        new ClassGeneratorVisitor(
-//            "Test" + String.valueOf(this.runs), new ArrayList<>(), environment);
-//    prog.accept(compileVisitor);
     byte[] bytes = compileVisitor.generate();
     try {
       if (store) {
@@ -61,7 +46,6 @@ public class Runner {
       }
 
       Class<?> c = environment.loadClass(compileVisitor.getClassName(), bytes);
-
       Object o = c.getMethod("run").invoke(null);
       if (o != null) {
         System.out.println(o);

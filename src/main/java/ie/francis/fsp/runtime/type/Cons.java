@@ -4,7 +4,7 @@
 
 package ie.francis.fsp.runtime.type;
 
-import ie.francis.fsp.ast.Visitor;
+import ie.francis.fsp.visitor.Visitor;
 
 import static ie.francis.fsp.runtime.type.Type.CONS;
 

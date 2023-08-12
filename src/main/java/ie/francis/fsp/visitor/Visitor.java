@@ -2,7 +2,7 @@
  * (c) 2023 Francis McNamee
  * */
 
-package ie.francis.fsp.ast;
+package ie.francis.fsp.visitor;
 
 import ie.francis.fsp.runtime.type.*;
 
