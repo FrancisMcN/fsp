@@ -13,7 +13,6 @@ import ie.francis.fsp.runtime.type.*;
 import ie.francis.fsp.runtime.type.Number;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -33,8 +32,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private final LocalVariablesSorter lvs;
 
-  public ClassGeneratorVisitor(
-      String className, List<String> parameters, Environment environment) {
+  public ClassGeneratorVisitor(String className, List<String> parameters, Environment environment) {
 
     this.className = className;
     this.environment = environment;
@@ -88,6 +86,8 @@ public class ClassGeneratorVisitor implements Visitor {
         }
         compileMacroCall(car, cons.getCdr());
       }
+    } else {
+      throw new RuntimeException("List is invalid: " + cons);
     }
   }
 
@@ -125,22 +125,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compileMacroCall(Symbol symbol, Cons cons) {
     Macro macro = (Macro) environment.get(symbol);
-    String owner = macro.name().split("\\.")[0];
-    String macroName = macro.name().split("\\.")[1];
-    List<DataType> params = new ArrayList<>();
-    while (cons != null) {
-      params.add((DataType) cons.getCar());
-      cons = cons.getCdr();
-    }
-    Class<?>[] paramTypes = new Class[params.size()];
-    Arrays.fill(paramTypes, Object.class);
-    try {
-      Object output =
-          environment.loadClass(owner).getMethod("run", paramTypes).invoke(null, params.toArray());
-      ((DataType) output).accept(this);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
-    }
+    macro.expand(cons, environment, this);
   }
 
   private void compileFunctionCall(Symbol symbol) {
@@ -215,7 +200,7 @@ public class ClassGeneratorVisitor implements Visitor {
       case "func":
         compileFuncSpecialForm(cons);
         break;
-      case "macro":
+      case "defmacro":
         compileMacroSpecialForm(cons);
         break;
       case "if":
@@ -244,10 +229,7 @@ public class ClassGeneratorVisitor implements Visitor {
     environment.put(macroName, new Macro(className + ".run", descriptor));
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
     cons = cons.getCdr().getCdr();
-    while (cons != null) {
-      ((DataType) cons.getCar()).accept(cgv);
-      cons = cons.getCdr();
-    }
+    ((DataType) cons.getCar()).accept(cgv);
     cgv.write();
 
     environment.loadClass(className, cgv.generate());
@@ -322,7 +304,7 @@ public class ClassGeneratorVisitor implements Visitor {
     switch (symbol.name()) {
       case "quote":
       case "func":
-      case "macro":
+      case "defmacro":
       case "if":
       case "progn":
         return true;
@@ -349,7 +331,16 @@ public class ClassGeneratorVisitor implements Visitor {
   @Override
   public void visit(Symbol symbol) {
     if (quoteDepth > 0) {
+      mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/type/Symbol");
+      mv.visitInsn(DUP);
       mv.visitLdcInsn(symbol.name());
+      mv.visitMethodInsn(
+          INVOKESPECIAL,
+          "ie/francis/fsp/runtime/type/Symbol",
+          "<init>",
+          "(Ljava/lang/String;)V",
+          false);
+
       return;
     }
     if (vars.containsKey(symbol.name())) {

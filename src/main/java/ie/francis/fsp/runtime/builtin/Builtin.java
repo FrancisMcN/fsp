@@ -4,12 +4,9 @@
 
 package ie.francis.fsp.runtime.builtin;
 
-//import ie.francis.fsp.parser.Parser;
+// import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.runtime.helper.ConsBuilder;
 import ie.francis.fsp.runtime.type.Cons;
-import ie.francis.fsp.scanner.Scanner;
-
-import java.util.Arrays;
 
 public class Builtin {
 
@@ -20,11 +17,11 @@ public class Builtin {
     return null;
   }
 
-//  public static Object read(Object value) {
-//    Scanner scanner = new Scanner(value.toString());
-//    Parser parser = new Parser(scanner);
-//    return parser.parse();
-//  }
+  //  public static Object read(Object value) {
+  //    Scanner scanner = new Scanner(value.toString());
+  //    Parser parser = new Parser(scanner);
+  //    return parser.parse();
+  //  }
 
   public static Object car(Object value) {
     return ((Cons) value).getCar();
