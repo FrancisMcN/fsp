@@ -180,6 +180,15 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private void compileArrayOfArguments(Cons cons, boolean evaluate) {
+
+    if (cons == null) {
+      // If variadic function has no arguments passed to it
+      // just create an empty array
+      mv.visitLdcInsn(0);
+      mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
+      return;
+    }
+
     int size = cons.size();
     // Specify array size first
     mv.visitLdcInsn(size);
@@ -308,7 +317,7 @@ public class ClassGeneratorVisitor implements Visitor {
     List<String> args = new ArrayList<>();
     Cons argCons = (Cons) cons.getCdr().getCar();
     int paramCount = argCons.size();
-    while (argCons != null) {
+    while (paramCount > 0 && argCons != null) {
       args.add(((DataType) argCons.getCar()).name());
       argCons = argCons.getCdr();
     }

@@ -55,7 +55,7 @@ public class Cons implements DataType {
     StringBuilder sb = new StringBuilder();
     Cons temp = this;
     sb.append("(");
-    while (temp != null) {
+    while (temp != null && temp.getCdr() != null) {
       sb.append(str(temp.getCar()));
       temp = temp.getCdr();
       if (temp != null) {
@@ -82,7 +82,10 @@ public class Cons implements DataType {
   }
 
   public int size() {
-    int size = 1;
+    int size = 0;
+    if (car != null) {
+      size = 1;
+    }
     Cons temp = cdr;
     while (temp != null) {
       size++;

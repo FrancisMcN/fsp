@@ -72,13 +72,13 @@ public class Parser {
     return list();
   }
 
-  // list : '(' sxpr+ ['.' sxpr]? ')'
+  // list : '(' sxpr* ['.' sxpr]? ')'
   public DataType list() {
     ConsBuilder consBuilder = new ConsBuilder();
     scanner.next();
-    do {
+    while (scanner.peek().getType() != Type.RPAREN && scanner.peek().getType() != Type.DOT) {
       consBuilder.add(sxpr());
-    } while (scanner.peek().getType() != Type.RPAREN && scanner.peek().getType() != Type.DOT);
+    }
 
     Token token = scanner.peek();
     //        if (token.getType() == Type.DOT) {
