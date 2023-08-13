@@ -1,5 +1,5 @@
 ;; Example using local variables
-;; x and y are local variables, must be defined in the
+;; x and y are local variables, z must be defined in the
 ;; surrounding environment
 
 (func example-function ()
