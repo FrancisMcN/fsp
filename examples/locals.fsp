@@ -1,0 +1,10 @@
+;; Example using local variables
+;; x and y are local variables, must be defined in the
+;; surrounding environment
+
+(func example-function ()
+	(let x 10)
+	(let y "hello world")
+	(println x)
+	(println y)
+	(println z))

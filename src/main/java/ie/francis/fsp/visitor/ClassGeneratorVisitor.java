@@ -30,6 +30,7 @@ public class ClassGeneratorVisitor implements Visitor {
   private final MethodVisitor mv;
 
   private int quoteDepth = 0;
+  private int blockDepth = 0;
   private final Map<String, Integer> vars;
 
   private final LocalVariablesSorter lvs;
@@ -54,12 +55,12 @@ public class ClassGeneratorVisitor implements Visitor {
     String descriptor =
         "(" + "Ljava/lang/Object;".repeat(parameters.size()) + ")Ljava/lang/Object;";
 
+    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", descriptor, null, null);
+    lvs = new LocalVariablesSorter(0, "()Ljava/lang/Object;", mv);
     for (int i = 0; i < parameters.size(); i++) {
       vars.put(parameters.get(i), i);
     }
 
-    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", descriptor, null, null);
-    lvs = new LocalVariablesSorter(0, "()Ljava/lang/Object;", mv);
     mv.visitCode();
   }
 
@@ -127,10 +128,10 @@ public class ClassGeneratorVisitor implements Visitor {
 
     int id =
         lvs.newLocal(org.objectweb.asm.Type.getType("Lie/francis/fsp/runtime/helper/ConsBuilder"));
-    mv.visitVarInsn(ASTORE, id);
+    lvs.visitVarInsn(ASTORE, id);
 
     while (cons != null) {
-      mv.visitVarInsn(ALOAD, id);
+      lvs.visitVarInsn(ALOAD, id);
       acceptor.accept(cons.getCar(), this);
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
@@ -141,7 +142,7 @@ public class ClassGeneratorVisitor implements Visitor {
       cons = cons.getCdr();
     }
 
-    mv.visitVarInsn(ALOAD, id);
+    lvs.visitVarInsn(ALOAD, id);
     mv.visitMethodInsn(
         INVOKEVIRTUAL,
         "ie/francis/fsp/runtime/helper/ConsBuilder",
@@ -256,8 +257,31 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private void compileLetSpecialForm(Cons cons) {
     String name = cons.getCar().toString();
-    environment.put(name, cons.getCdr().getCar());
+    if (blockDepth > 0) {
+      String descriptor = findTypeDescriptor(cons.getCdr().getCar());
+      int id;
+      if (!vars.containsKey(name)) {
+        id = lvs.newLocal(org.objectweb.asm.Type.getType(descriptor));
+        vars.put(name, id);
+      } else {
+        id = vars.get(name);
+      }
+
+      acceptor.accept(cons.getCdr().getCar(), this);
+      lvs.visitVarInsn(ASTORE, id);
+    } else {
+      environment.put(name, cons.getCdr().getCar());
+    }
+
     mv.visitInsn(ACONST_NULL);
+  }
+
+  private String findTypeDescriptor(Object object) {
+    if (object instanceof DataType) {
+      return ((DataType) object).descriptor();
+    } else {
+      return "Ljava/lang/Object;";
+    }
   }
 
   private void compileLoadSpecialForm(Cons cons) {
@@ -353,11 +377,13 @@ public class ClassGeneratorVisitor implements Visitor {
 
     environment.put(functionName, new Function(className + ".run", descriptor));
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
+    cgv.blockDepth++;
     cons = cons.getCdr().getCdr();
     while (cons != null) {
       acceptor.accept(cons.getCar(), cgv);
       cons = cons.getCdr();
     }
+    cgv.blockDepth--;
     cgv.write();
 
     environment.loadClass(className, cgv.generate());
