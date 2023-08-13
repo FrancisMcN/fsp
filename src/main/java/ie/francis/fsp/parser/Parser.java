@@ -67,7 +67,9 @@ public class Parser {
         && peek.getType() != Type.STRING
         && peek.getType() != Type.BOOLEAN) {
       throw new SyntaxErrorException(
-          String.format("expected '(', symbol, number or a string but found: %s", token.getType()));
+          String.format(
+              "expected '(', symbol, number or a string but found: %s on line %d",
+              token.getType(), token.getLineNo()));
     }
     return list();
   }
@@ -90,7 +92,8 @@ public class Parser {
     //        }
 
     if (scanner.peek().getType() != Type.RPAREN) {
-      throw new SyntaxErrorException(String.format("expected ')', found: %s", token.getType()));
+      throw new SyntaxErrorException(
+          String.format("expected ')', found: %s on line %d", token.getType(), token.getLineNo()));
     }
 
     scanner.next();
@@ -128,7 +131,9 @@ public class Parser {
       default:
         {
           throw new SyntaxErrorException(
-              String.format("expected symbol, number, string or list. Found: %s", token.getType()));
+              String.format(
+                  "expected symbol, number, string or list. Found: %s on line %d",
+                  token.getType(), token.getLineNo()));
         }
     }
   }

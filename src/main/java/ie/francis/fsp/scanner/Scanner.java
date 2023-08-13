@@ -12,9 +12,12 @@ public class Scanner {
   private final String input;
   private int ptr;
 
+  private int lineNo;
+
   public Scanner(String input) {
     this.input = input;
     this.ptr = 0;
+    this.lineNo = 1;
   }
 
   public boolean hasNext() {
@@ -23,8 +26,10 @@ public class Scanner {
 
   public Token peek() {
     int ptr = this.ptr;
+    int lineNo = this.lineNo;
     Token token = next();
     this.ptr = ptr;
+    this.lineNo = lineNo;
     return token;
   }
 
@@ -32,18 +37,22 @@ public class Scanner {
     while (ptr < input.length()) {
       char c = input.charAt(ptr);
       switch (c) {
+        case '\n':
+          ptr++;
+          lineNo++;
+          continue;
         case '(':
           ptr++;
-          return new Token(Type.LPAREN, "(");
+          return new Token(Type.LPAREN, "(", lineNo);
         case ')':
           ptr++;
-          return new Token(Type.RPAREN, ")");
+          return new Token(Type.RPAREN, ")", lineNo);
         case '#':
           ptr++;
-          return new Token(Type.HASH, "#");
+          return new Token(Type.HASH, "#", lineNo);
         case '.':
           ptr++;
-          return new Token(Type.DOT, ".");
+          return new Token(Type.DOT, ".", lineNo);
         case '"':
           ptr++;
           return stringToken();
@@ -59,14 +68,14 @@ public class Scanner {
               ptr++;
             } else if (isReaderMacro(c)) {
               ptr++;
-              return new Token(Type.RMACRO, String.valueOf(c));
+              return new Token(Type.RMACRO, String.valueOf(c), lineNo);
             } else {
               return symbolToken();
             }
           }
       }
     }
-    return new Token(Type.EOF, "eof");
+    return new Token(Type.EOF, "eof", lineNo);
   }
 
   private boolean isReaderMacro(char character) {
@@ -104,7 +113,7 @@ public class Scanner {
       sb.append(input.charAt(ptr++));
     }
     ptr++;
-    return new Token(Type.STRING, sb.toString());
+    return new Token(Type.STRING, sb.toString(), lineNo);
   }
 
   private Token numberToken() {
@@ -113,7 +122,7 @@ public class Scanner {
         && (Character.isDigit(input.charAt(ptr)) || input.charAt(ptr) == '.')) {
       sb.append(input.charAt(ptr++));
     }
-    return new Token(Type.NUMBER, sb.toString());
+    return new Token(Type.NUMBER, sb.toString(), lineNo);
   }
 
   private Token symbolToken() {
@@ -122,9 +131,9 @@ public class Scanner {
       sb.append(input.charAt(ptr++));
     }
     if (sb.toString().equals("true") || sb.toString().equals("false")) {
-      return new Token(Type.BOOLEAN, sb.toString());
+      return new Token(Type.BOOLEAN, sb.toString(), lineNo);
     }
-    return new Token(Type.SYMBOL, sb.toString());
+    return new Token(Type.SYMBOL, sb.toString(), lineNo);
   }
 
   private boolean isSpecialOrWhitespace(char character) {

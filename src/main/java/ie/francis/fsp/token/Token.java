@@ -9,9 +9,12 @@ public class Token {
   private final Type type;
   private final String value;
 
-  public Token(Type type, String value) {
+  private int lineNo;
+
+  public Token(Type type, String value, int lineNo) {
     this.type = type;
     this.value = value;
+    this.lineNo = lineNo;
   }
 
   public Type getType() {
@@ -22,8 +25,12 @@ public class Token {
     return value;
   }
 
+  public int getLineNo() {
+    return lineNo;
+  }
+
   @Override
   public String toString() {
-    return String.format("(%s, '%s')", type, value);
+    return String.format("(%s, '%s', %d)", type, value, lineNo);
   }
 }
