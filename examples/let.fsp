@@ -1,0 +1,10 @@
+;; Example of using variables in programs
+
+(let x 10)
+
+(func test (x) x)
+
+(func test2 (y) (+ x y))
+
+(println (test 50))
+(println (test2 5))

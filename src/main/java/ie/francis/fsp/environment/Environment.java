@@ -6,7 +6,6 @@ package ie.francis.fsp.environment;
 
 import ie.francis.fsp.classloader.ParentCustomClassLoader;
 import ie.francis.fsp.runtime.builtin.*;
-import ie.francis.fsp.runtime.type.DataType;
 import ie.francis.fsp.runtime.type.Symbol;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +13,7 @@ import java.util.Map;
 public class Environment {
 
   private static Environment singleton;
-  private final Map<String, DataType> env;
+  private final Map<String, Object> env;
   private final ParentCustomClassLoader classLoader;
 
   public Environment() {
@@ -29,11 +28,11 @@ public class Environment {
     return Environment.singleton;
   }
 
-  public DataType get(Symbol symbol) {
+  public Object get(Symbol symbol) {
     return this.env.get(symbol.name());
   }
 
-  public void put(String name, DataType data) {
+  public void put(String name, Object data) {
     this.env.put(name, data);
   }
 

@@ -6,6 +6,7 @@ package ie.francis.fsp;
 
 import ie.francis.fsp.environment.Environment;
 import ie.francis.fsp.runtime.builtin.Read;
+import ie.francis.fsp.runtime.type.DataType;
 import ie.francis.fsp.runtime.type.Symbol;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,7 +29,7 @@ public class Main {
       Read.run(data);
       Symbol main = new Symbol(String.format("%s.main", moduleName));
       if (environment.contains(main)) {
-        String mainClassName = environment.get(main).name().replace(".run", "");
+        String mainClassName = ((DataType) environment.get(main)).name().replace(".run", "");
         Class<?> c = environment.loadClass(mainClassName);
         try {
           c.getMethod("run").invoke(null);

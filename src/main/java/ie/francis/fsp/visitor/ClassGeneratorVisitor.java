@@ -164,7 +164,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private boolean isMacro(Symbol symbol) {
     if (environment.contains(symbol)) {
-      return environment.get(symbol).type() == MACRO;
+      return ((DataType) environment.get(symbol)).type() == MACRO;
     }
     return false;
   }
@@ -218,12 +218,12 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private boolean isVariadic(Symbol symbol) {
-    return environment.get(symbol).descriptor().startsWith("([");
+    return ((DataType) environment.get(symbol)).descriptor().startsWith("([");
   }
 
   private boolean isFunction(Symbol symbol) {
     if (environment.contains(symbol)) {
-      return environment.get(symbol).type() == FUNCTION;
+      return ((DataType) environment.get(symbol)).type() == FUNCTION;
     }
     return false;
   }
@@ -242,6 +242,9 @@ public class ClassGeneratorVisitor implements Visitor {
       case "load":
         compileLoadSpecialForm(cons);
         break;
+      case "let":
+        compileLetSpecialForm(cons);
+        break;
       case "if":
         compileIfSpecialForm(cons);
         break;
@@ -249,6 +252,12 @@ public class ClassGeneratorVisitor implements Visitor {
         compilePrognSpecialForm(cons);
         break;
     }
+  }
+
+  private void compileLetSpecialForm(Cons cons) {
+    String name = cons.getCar().toString();
+    environment.put(name, cons.getCdr().getCar());
+    mv.visitInsn(ACONST_NULL);
   }
 
   private void compileLoadSpecialForm(Cons cons) {
@@ -370,6 +379,7 @@ public class ClassGeneratorVisitor implements Visitor {
       case "func":
       case "defmacro":
       case "if":
+      case "let":
       case "load":
       case "progn":
         return true;
@@ -393,8 +403,9 @@ public class ClassGeneratorVisitor implements Visitor {
       return;
     }
     if (vars.containsKey(symbol.name())) {
-
       lvs.visitVarInsn(ALOAD, vars.get(symbol.name()));
+    } else if (environment.contains(symbol)) {
+      acceptor.accept(environment.get(symbol), this);
     }
   }
 
