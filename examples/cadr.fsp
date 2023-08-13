@@ -3,7 +3,12 @@
 (func cadr (x)
     (car (cdr x)))
 
-(println '( 1 2 3 4))
-(println (car '( 1 2 3 4)))
-(println (cdr '( 1 2 3 4)))
-(println (cadr '( 1 2 3 4)))
+(func main ()
+
+	(println '( 1 2 3 4))
+	
+	(println (car '( 1 2 3 4)))
+	
+	(println (cdr '( 1 2 3 4)))
+	
+	(println (cadr '( 1 2 3 4))))

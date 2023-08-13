@@ -4,9 +4,11 @@
 
 (defmacro infix (expr) 
 	(list (car (cdr expr)) (car expr) (car (cdr (cdr expr)))))
- 
-(println (macroexpand '(infix (2 + 3))))
 
-(println (macroexpand '(infix (15 + 40))))
+(func main ()
 
-(println (infix (10 * 3)))
+	(println (macroexpand '(infix (2 + 3))))
+
+	(println (macroexpand '(infix (15 + 40))))
+
+	(println (infix (10 * 3))))

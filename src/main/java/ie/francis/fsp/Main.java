@@ -4,23 +4,37 @@
 
 package ie.francis.fsp;
 
+import ie.francis.fsp.environment.Environment;
+import ie.francis.fsp.runtime.builtin.Load;
+import ie.francis.fsp.runtime.type.Symbol;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.reflect.InvocationTargetException;
 
 public class Main {
   public static void main(String[] args) throws IOException {
 
+    Environment environment = new Environment();
+    environment.loadBuiltins();
+
     if (args.length > 0) {
       String filename = args[0];
-      String data = Files.readString(Path.of(filename));
-      new Runner().compileAndRun(data, true);
+      Load.run(filename);
+      Symbol main = new Symbol("main");
+      if (environment.contains(main)) {
+        String mainClassName = environment.get(main).name().replace(".run", "");
+        Class<?> c = environment.loadClass(mainClassName);
+        try {
+          c.getMethod("run").invoke(null);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+          throw new RuntimeException(e);
+        }
+      }
       return;
     }
 
-    Repl repl = new Repl();
+    Repl repl = new Repl(environment);
     while (true) {
       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
       System.out.print("> ");

@@ -6,15 +6,19 @@
 	(list 'if (list '= y true) true false) false))
 
 ;; Testing the 'and' macro
+;; main doesn't run when this file is loaded as a file
+;; it only runs when this file is executed directly
 
-(println (and true true))
-; true
+(func main ()
+	(println (and true true))
+	; true
 
-(println (and true false))
-; false
+	(println (and true false))
+	; false
 
-(println (and false true))
-; false
+	(println (and false true))
+	; false
 
-(println (and false false))
-; false
+	(println (and false false))
+	; false
+)

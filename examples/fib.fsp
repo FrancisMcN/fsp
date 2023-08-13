@@ -3,5 +3,8 @@
 (func fib (n)
 	(if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))
 
+;; main doesn't run when this file is loaded as a file
+;; it only runs when this file is executed directly
+
 (func main ()
 	(println (fib 41)))
