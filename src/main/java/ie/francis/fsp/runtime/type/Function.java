@@ -4,14 +4,14 @@
 
 package ie.francis.fsp.runtime.type;
 
-import ie.francis.fsp.visitor.Visitor;
-
 import static ie.francis.fsp.runtime.type.Type.FUNCTION;
+
+import ie.francis.fsp.visitor.Visitor;
 
 public class Function implements DataType {
 
-  private final String name;
-  private final String descriptor;
+  protected String name;
+  protected String descriptor;
 
   public Function(String name, String descriptor) {
     this.name = name;

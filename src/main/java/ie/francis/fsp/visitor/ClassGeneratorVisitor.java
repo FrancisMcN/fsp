@@ -10,7 +10,6 @@ import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.fsp.environment.Environment;
 import ie.francis.fsp.runtime.type.*;
-import ie.francis.fsp.runtime.type.Number;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -31,9 +30,11 @@ public class ClassGeneratorVisitor implements Visitor {
   private final Map<String, Integer> vars;
 
   private final LocalVariablesSorter lvs;
+  private final Acceptor acceptor;
 
   public ClassGeneratorVisitor(String className, List<String> parameters, Environment environment) {
 
+    this.acceptor = new AcceptorImpl();
     this.className = className;
     this.environment = environment;
     this.vars = new HashMap<>();
@@ -57,6 +58,19 @@ public class ClassGeneratorVisitor implements Visitor {
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "run", descriptor, null, null);
     lvs = new LocalVariablesSorter(0, "()Ljava/lang/Object;", mv);
     mv.visitCode();
+  }
+
+  @Override
+  public void visit(Integer integer) {
+    mv.visitLdcInsn(integer);
+    mv.visitMethodInsn(
+        INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+  }
+
+  @Override
+  public void visit(Float floating) {
+    mv.visitLdcInsn(floating);
+    mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
   }
 
   @Override
@@ -87,8 +101,18 @@ public class ClassGeneratorVisitor implements Visitor {
         compileMacroCall(car, cons.getCdr());
       }
     } else {
-      throw new RuntimeException("List is invalid: " + cons);
+      while (cons != null) {
+        acceptor.accept(cons.getCar(), this);
+        cons = cons.getCdr();
+      }
     }
+  }
+
+  @Override
+  public void visit(Boolean bool) {
+    mv.visitLdcInsn(bool);
+    mv.visitMethodInsn(
+        INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
   }
 
   private void compileQuotedList(Cons cons) {
@@ -104,7 +128,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
     while (cons != null) {
       mv.visitVarInsn(ALOAD, id);
-      ((DataType) cons.getCar()).accept(this);
+      acceptor.accept(cons.getCar(), this);
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
           "ie/francis/fsp/runtime/helper/ConsBuilder",
@@ -147,7 +171,7 @@ public class ClassGeneratorVisitor implements Visitor {
       this.quoteDepth++;
     }
     while (cons != null) {
-      ((DataType) cons.getCar()).accept(this);
+      acceptor.accept(cons.getCar(), this);
       cons = cons.getCdr();
     }
     if (!evaluate) {
@@ -168,7 +192,7 @@ public class ClassGeneratorVisitor implements Visitor {
     int i = 0;
     while (cons != null) {
       mv.visitLdcInsn(i);
-      ((DataType) cons.getCar()).accept(this);
+      acceptor.accept(cons.getCar(), this);
       cons = cons.getCdr();
       mv.visitInsn(AASTORE);
       if (i < size - 1) {
@@ -207,8 +231,19 @@ public class ClassGeneratorVisitor implements Visitor {
         compileIfSpecialForm(cons);
         break;
       case "progn":
-        //        compilePrognSpecialForm(cons);
+        compilePrognSpecialForm(cons);
         break;
+    }
+  }
+
+  private void compilePrognSpecialForm(Cons cons) {
+    while (cons != null) {
+      acceptor.accept(cons.getCar(), this);
+      // Ignore all but final return value
+      if (cons.getCdr() != null) {
+        mv.visitInsn(POP);
+      }
+      cons = cons.getCdr();
     }
   }
 
@@ -229,7 +264,7 @@ public class ClassGeneratorVisitor implements Visitor {
     environment.put(macroName, new Macro(className + ".run", descriptor));
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
     cons = cons.getCdr().getCdr();
-    ((DataType) cons.getCar()).accept(cgv);
+    acceptor.accept(cons.getCar(), cgv);
     cgv.write();
 
     environment.loadClass(className, cgv.generate());
@@ -239,7 +274,7 @@ public class ClassGeneratorVisitor implements Visitor {
   private void compileIfSpecialForm(Cons cons) {
 
     // Compile condition, expecting a Cons cell
-    ((Cons) cons.getCar()).accept(this);
+    acceptor.accept(cons.getCar(), this);
 
     mv.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
     mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);
@@ -249,15 +284,17 @@ public class ClassGeneratorVisitor implements Visitor {
     mv.visitJumpInsn(IFEQ, startOfElseLabel);
 
     // Compile true block
-    ((DataType) cons.getCdr().getCar()).accept(this);
+    if (cons.getCdr() != null) {
+      acceptor.accept(cons.getCdr().getCar(), this);
+    }
 
     // Jump past the false block after entering the true block if it exists
     mv.visitJumpInsn(GOTO, endOfIfLabel);
     mv.visitLabel(startOfElseLabel);
 
     // Compile false block if it exists
-    if ((cons.getCdr().getCdr() != null)) {
-      ((DataType) cons.getCdr().getCdr().getCar()).accept(this);
+    if (cons.getCdr() != null && cons.getCdr().getCdr() != null) {
+      acceptor.accept(cons.getCdr().getCdr().getCar(), this);
     } else {
       mv.visitInsn(ACONST_NULL);
     }
@@ -282,7 +319,7 @@ public class ClassGeneratorVisitor implements Visitor {
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
     cons = cons.getCdr().getCdr();
     while (cons != null) {
-      ((DataType) cons.getCar()).accept(cgv);
+      acceptor.accept(cons.getCar(), cgv);
       cons = cons.getCdr();
     }
     cgv.write();
@@ -294,7 +331,7 @@ public class ClassGeneratorVisitor implements Visitor {
   private void compileQuoteSpecialForm(Cons cons) {
     this.quoteDepth++;
     while (cons != null) {
-      ((DataType) cons.getCar()).accept(this);
+      acceptor.accept(cons.getCar(), this);
       cons = cons.getCdr();
     }
     this.quoteDepth--;
@@ -310,22 +347,6 @@ public class ClassGeneratorVisitor implements Visitor {
         return true;
     }
     return false;
-  }
-
-  @Override
-  public void visit(FspString fspString) {
-    mv.visitLdcInsn(fspString.name());
-  }
-
-  @Override
-  public void visit(Bool bool) {
-    mv.visitLdcInsn(String.valueOf(bool.getValue()));
-    mv.visitMethodInsn(
-        INVOKESTATIC,
-        "java/lang/Boolean",
-        "valueOf",
-        "(Ljava/lang/String;)Ljava/lang/Boolean;",
-        false);
   }
 
   @Override
@@ -350,22 +371,37 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   @Override
+  public void visit(String str) {
+    mv.visitLdcInsn(str);
+  }
+
+  @Override
+  public void visit(Atom atom) {
+    switch (atom.type()) {
+      case STRING:
+        acceptor.accept(atom.getString(), this);
+        break;
+      case SYMBOL:
+        acceptor.accept(atom.getSymbol(), this);
+        break;
+      case NUMBER:
+        if (atom.getFloat() != null) {
+          acceptor.accept(atom.getFloat(), this);
+        } else {
+          acceptor.accept(atom.getInteger(), this);
+        }
+        break;
+      case BOOL:
+        acceptor.accept(atom.getBool(), this);
+        break;
+    }
+  }
+
+  @Override
   public void visit(Function function) {}
 
   @Override
   public void visit(Macro macro) {}
-
-  @Override
-  public void visit(Number number) {
-    if (number.isFloat()) {
-      mv.visitLdcInsn(number.getFValue());
-      mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
-    } else {
-      mv.visitLdcInsn(number.getIValue());
-      mv.visitMethodInsn(
-          INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
-    }
-  }
 
   public byte[] generate() {
     mv.visitInsn(ARETURN);

@@ -5,20 +5,28 @@
 package ie.francis.fsp.environment;
 
 import ie.francis.fsp.classloader.ParentCustomClassLoader;
+import ie.francis.fsp.runtime.builtin.*;
 import ie.francis.fsp.runtime.type.DataType;
-import ie.francis.fsp.runtime.type.Function;
 import ie.francis.fsp.runtime.type.Symbol;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Environment {
 
+  private static Environment singleton;
   private final Map<String, DataType> env;
   private final ParentCustomClassLoader classLoader;
 
   public Environment() {
     env = new HashMap<>();
     classLoader = new ParentCustomClassLoader();
+    if (Environment.singleton == null) {
+      Environment.singleton = this;
+    }
+  }
+
+  public static Environment singleton() {
+    return Environment.singleton;
   }
 
   public DataType get(Symbol symbol) {
@@ -42,65 +50,21 @@ public class Environment {
   }
 
   public void loadBuiltins() {
-    env.put(
-        "+",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Plus.run", "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "-",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Minus.run", "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "*",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Multiply.run",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "/",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Divide.run",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "<",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/LessThan.run",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        ">",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/GreaterThan.run",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "=",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Equals.run",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "concat",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Concat.run",
-            "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "read",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Read.run", "(Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "car",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Car.run", "(Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "cdr",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Cdr.run", "(Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "list",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/List.run", "([Ljava/lang/Object;)Ljava/lang/Object;"));
-    env.put(
-        "println",
-        new Function(
-            "ie/francis/fsp/runtime/builtin/Println.run",
-            "(Ljava/lang/Object;)Ljava/lang/Object;"));
+
+    env.put("+", new Plus());
+    env.put("-", new Minus());
+    env.put("*", new Multiply());
+    env.put("/", new Divide());
+    env.put("<", new LessThan());
+    env.put(">", new GreaterThan());
+    env.put("=", new Equals());
+    env.put("concat", new Concat());
+    env.put("car", new Car());
+    env.put("cdr", new Cdr());
+    env.put("list", new List());
+    env.put("println", new Println());
+    env.put("read", new Read());
+    env.put("macroexpand", new Macroexpand());
   }
 
   @Override

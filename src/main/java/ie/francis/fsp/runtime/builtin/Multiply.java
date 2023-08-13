@@ -4,7 +4,19 @@
 
 package ie.francis.fsp.runtime.builtin;
 
-public class Multiply {
+import ie.francis.fsp.runtime.type.Function;
+
+public class Multiply extends Function {
+
+  public Multiply(String name, String descriptor) {
+    super(name, descriptor);
+  }
+
+  public Multiply() {
+    super(
+        String.format("%s.run", Multiply.class.getCanonicalName().replace(".", "/")),
+        "([Ljava/lang/Object;)Ljava/lang/Object;");
+  }
 
   public static Object run(Object... nums) {
     Integer sum = (Integer) nums[0];

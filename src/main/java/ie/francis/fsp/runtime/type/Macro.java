@@ -7,6 +7,7 @@ package ie.francis.fsp.runtime.type;
 import static ie.francis.fsp.runtime.type.Type.MACRO;
 
 import ie.francis.fsp.environment.Environment;
+import ie.francis.fsp.visitor.AcceptorImpl;
 import ie.francis.fsp.visitor.Visitor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -48,20 +49,21 @@ public class Macro implements DataType {
     visitor.visit(this);
   }
 
-  public void expand(Cons cons, Environment environment, Visitor visitor) {
+  public Object expand(Cons cons, Environment environment, Visitor visitor) {
     String owner = name().split("\\.")[0];
-    List<DataType> params = new ArrayList<>();
+    List<Object> params = new ArrayList<>();
     while (cons != null) {
-      params.add((DataType) cons.getCar());
+      params.add(cons.getCar());
       cons = cons.getCdr();
     }
     Class<?>[] paramTypes = new Class[params.size()];
     Arrays.fill(paramTypes, Object.class);
     try {
+      //      System.out.println(params);
       Object output =
           environment.loadClass(owner).getMethod("run", paramTypes).invoke(null, params.toArray());
-
-      ((DataType) output).accept(visitor);
+      new AcceptorImpl().accept(output, visitor);
+      return output;
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
     }

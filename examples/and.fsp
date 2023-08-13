@@ -1,0 +1,20 @@
+;; Implementation of the 'and' macro
+;; This macro returns true both arguments are true
+
+(defmacro and (x y) 
+	(list 'if (list '= x true) 
+	(list 'if (list '= y true) true false) false))
+
+;; Testing the 'and' macro
+
+(println (and true true))
+; true
+
+(println (and true false))
+; false
+
+(println (and false true))
+; false
+
+(println (and false false))
+; false

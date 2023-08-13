@@ -41,12 +41,6 @@ public class Scanner {
         case '#':
           ptr++;
           return new Token(Type.HASH, "#");
-        case '\'':
-          ptr++;
-          return new Token(Type.QUOTE, "'");
-        case '`':
-          ptr++;
-          return new Token(Type.TICK, "`");
         case '.':
           ptr++;
           return new Token(Type.DOT, ".");
@@ -63,6 +57,9 @@ public class Scanner {
               return numberToken();
             } else if (Character.isWhitespace(c)) {
               ptr++;
+            } else if (isReaderMacro(c)) {
+              ptr++;
+              return new Token(Type.RMACRO, String.valueOf(c));
             } else {
               return symbolToken();
             }
@@ -70,6 +67,29 @@ public class Scanner {
       }
     }
     return new Token(Type.EOF, "eof");
+  }
+
+  private boolean isReaderMacro(char character) {
+    switch (character) {
+      case '\'':
+      case '@':
+        return true;
+    }
+    return false;
+  }
+
+  private boolean isSpecial(char character) {
+    switch (character) {
+      case '(':
+      case ')':
+      case '\'':
+      case '#':
+      case '`':
+      case '"':
+        return true;
+      default:
+        return false;
+    }
   }
 
   private void ignoreComment() {
@@ -108,16 +128,9 @@ public class Scanner {
   }
 
   private boolean isSpecialOrWhitespace(char character) {
-    switch (character) {
-      case '(':
-      case ')':
-      case '\'':
-      case '#':
-      case '`':
-      case '"':
-        return true;
-      default:
-        return Character.isWhitespace(character);
+    if (isSpecial(character)) {
+      return true;
     }
+    return Character.isWhitespace(character);
   }
 }

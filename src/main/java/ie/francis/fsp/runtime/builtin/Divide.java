@@ -4,7 +4,19 @@
 
 package ie.francis.fsp.runtime.builtin;
 
-public class Divide {
+import ie.francis.fsp.runtime.type.Function;
+
+public class Divide extends Function {
+
+  public Divide(String name, String descriptor) {
+    super(name, descriptor);
+  }
+
+  public Divide() {
+    super(
+        String.format("%s.run", Divide.class.getCanonicalName().replace(".", "/")),
+        "([Ljava/lang/Object;)Ljava/lang/Object;");
+  }
 
   public static Object run(Object... nums) {
     Integer sum = (Integer) nums[0];

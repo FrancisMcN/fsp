@@ -1,0 +1,20 @@
+;; Implementation of the 'or' macro
+;; This macro returns true if either argument is true
+
+(defmacro or (x y) 
+	(list 'if (list '= x true) true 
+	(list 'if (list '= y true) true false)))
+
+;; Testing the 'or' macro
+
+(println (or true true))
+; true
+
+(println (or true false))
+; true
+
+(println (or false true))
+; true
+
+(println (or false false))
+; false

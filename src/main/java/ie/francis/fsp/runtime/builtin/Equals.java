@@ -4,7 +4,19 @@
 
 package ie.francis.fsp.runtime.builtin;
 
-public class Equals {
+import ie.francis.fsp.runtime.type.Function;
+
+public class Equals extends Function {
+
+  public Equals(String name, String descriptor) {
+    super(name, descriptor);
+  }
+
+  public Equals() {
+    super(
+        String.format("%s.run", Equals.class.getCanonicalName().replace(".", "/")),
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+  }
 
   public static Object run(Object a, Object b) {
     if (a instanceof Integer) {

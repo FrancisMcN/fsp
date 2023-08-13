@@ -5,8 +5,19 @@
 package ie.francis.fsp.runtime.builtin;
 
 import ie.francis.fsp.runtime.type.Cons;
+import ie.francis.fsp.runtime.type.Function;
 
-public class Cdr {
+public class Cdr extends Function {
+
+  public Cdr(String name, String descriptor) {
+    super(name, descriptor);
+  }
+
+  public Cdr() {
+    super(
+        String.format("%s.run", Cdr.class.getCanonicalName().replace(".", "/")),
+        "(Ljava/lang/Object;)Ljava/lang/Object;");
+  }
 
   public static Object run(Object value) {
     return ((Cons) value).getCdr();

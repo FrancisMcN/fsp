@@ -4,9 +4,9 @@
 
 package ie.francis.fsp.runtime.type;
 
-import ie.francis.fsp.visitor.Visitor;
-
 import static ie.francis.fsp.runtime.type.Type.CONS;
+
+import ie.francis.fsp.visitor.Visitor;
 
 public class Cons implements DataType {
 
@@ -16,7 +16,11 @@ public class Cons implements DataType {
   public Cons() {}
 
   public void setCar(Object car) {
-    this.car = car;
+    if (car instanceof Atom) {
+      this.car = ((Atom) car).unwrap();
+    } else {
+      this.car = car;
+    }
   }
 
   public Object getCar() {
