@@ -8,8 +8,9 @@
 ;; Testing the 'or' macro
 ;; main doesn't run when this file is loaded as a file
 ;; it only runs when this file is executed directly
+;; filename must currently be pre-pended to main until modules are implemented
 
-(func main ()
+(func or.main ()
 	(println (or true true))
 	; true
 

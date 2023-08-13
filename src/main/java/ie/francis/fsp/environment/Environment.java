@@ -64,7 +64,6 @@ public class Environment {
     env.put("list", new List());
     env.put("println", new Println());
     env.put("read", new Read());
-    env.put("load", new Load());
     env.put("macroexpand", new Macroexpand());
   }
 

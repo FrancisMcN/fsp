@@ -9,9 +9,12 @@ import static ie.francis.fsp.runtime.type.Type.MACRO;
 import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.fsp.environment.Environment;
+import ie.francis.fsp.runtime.builtin.Read;
 import ie.francis.fsp.runtime.type.*;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -234,7 +237,10 @@ public class ClassGeneratorVisitor implements Visitor {
         compileFuncSpecialForm(cons);
         break;
       case "defmacro":
-        compileMacroSpecialForm(cons);
+        compileDefMacroSpecialForm(cons);
+        break;
+      case "load":
+        compileLoadSpecialForm(cons);
         break;
       case "if":
         compileIfSpecialForm(cons);
@@ -242,6 +248,17 @@ public class ClassGeneratorVisitor implements Visitor {
       case "progn":
         compilePrognSpecialForm(cons);
         break;
+    }
+  }
+
+  private void compileLoadSpecialForm(Cons cons) {
+    String data;
+    try {
+      data = Files.readString(Path.of(cons.getCar().toString()));
+      Read.run(data);
+      mv.visitInsn(ACONST_NULL);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -256,10 +273,10 @@ public class ClassGeneratorVisitor implements Visitor {
     }
   }
 
-  private void compileMacroSpecialForm(Cons cons) {
+  private void compileDefMacroSpecialForm(Cons cons) {
     String macroName = ((Symbol) (cons.getCar())).name();
     String className = macroName.substring(0, 1).toUpperCase() + macroName.substring(1);
-
+    className = className.replace(".", "_dot_");
     List<String> args = new ArrayList<>();
     Cons argCons = (Cons) cons.getCdr().getCar();
     int paramCount = argCons.size();
@@ -313,6 +330,7 @@ public class ClassGeneratorVisitor implements Visitor {
   private void compileFuncSpecialForm(Cons cons) {
     String functionName = ((Symbol) (cons.getCar())).name();
     String className = functionName.substring(0, 1).toUpperCase() + functionName.substring(1);
+    className = className.replace(".", "_dot_");
 
     List<String> args = new ArrayList<>();
     Cons argCons = (Cons) cons.getCdr().getCar();
@@ -352,6 +370,7 @@ public class ClassGeneratorVisitor implements Visitor {
       case "func":
       case "defmacro":
       case "if":
+      case "load":
       case "progn":
         return true;
     }

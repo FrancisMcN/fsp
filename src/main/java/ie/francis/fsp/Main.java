@@ -5,12 +5,14 @@
 package ie.francis.fsp;
 
 import ie.francis.fsp.environment.Environment;
-import ie.francis.fsp.runtime.builtin.Load;
+import ie.francis.fsp.runtime.builtin.Read;
 import ie.francis.fsp.runtime.type.Symbol;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Main {
   public static void main(String[] args) throws IOException {
@@ -20,8 +22,11 @@ public class Main {
 
     if (args.length > 0) {
       String filename = args[0];
-      Load.run(filename);
-      Symbol main = new Symbol("main");
+      String[] moduleNameParts = filename.replace("/", ".").split("\\.");
+      String moduleName = moduleNameParts[moduleNameParts.length - 2];
+      String data = Files.readString(Path.of(filename));
+      Read.run(data);
+      Symbol main = new Symbol(String.format("%s.main", moduleName));
       if (environment.contains(main)) {
         String mainClassName = environment.get(main).name().replace(".run", "");
         Class<?> c = environment.loadClass(mainClassName);

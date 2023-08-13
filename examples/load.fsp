@@ -1,0 +1,14 @@
+;; This example shows how the load function can 
+;; load and evaluate external files
+
+(load "examples/and.fsp")   ; Load the 'and' macro
+(load "examples/or.fsp")    ; Load the 'or' macro
+(load "examples/infix.fsp") ; Load the 'infix' macro
+(load "examples/cadr.fsp")  ; Load the cadr function
+(load "examples/fib.fsp")   ; Load the Fibonacci function
+
+(func load.main ()
+
+    (println (fib 10))
+    (println (infix (2 * 6)))
+	(println "hello world"))

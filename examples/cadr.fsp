@@ -3,7 +3,7 @@
 (func cadr (x)
     (car (cdr x)))
 
-(func main ()
+(func cadr.main ()
 
 	(println '( 1 2 3 4))
 	
