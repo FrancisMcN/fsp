@@ -11,17 +11,15 @@ import ie.francis.fsp.runtime.type.Macro;
 import ie.francis.fsp.runtime.type.Symbol;
 import ie.francis.fsp.visitor.ClassGeneratorVisitor;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Macroexpand extends Function {
-
-  public Macroexpand(String name, String descriptor) {
-    super(name, descriptor);
-  }
 
   public Macroexpand() {
     super(
         String.format("%s.run", Macroexpand.class.getCanonicalName().replace(".", "/")),
-        "(Ljava/lang/Object;)Ljava/lang/Object;");
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        new ArrayList<>(List.of("macro")));
   }
 
   public static Object run(Object value) {

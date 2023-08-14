@@ -4,24 +4,25 @@
 
 package ie.francis.fsp.runtime.builtin;
 
+import ie.francis.fsp.runtime.type.Cons;
 import ie.francis.fsp.runtime.type.Function;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Plus extends Function {
-
-  public Plus(String name, String descriptor) {
-    super(name, descriptor);
-  }
-
   public Plus() {
     super(
         String.format("%s.run", Plus.class.getCanonicalName().replace(".", "/")),
-        "([Ljava/lang/Object;)Ljava/lang/Object;");
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        new ArrayList<>(List.of("&rest", "values")));
   }
 
-  public static Object run(Object... nums) {
+  public static Object run(Object object) {
+    Cons cons = ((Cons) object);
     Integer sum = 0;
-    for (Object o : nums) {
-      sum += ((Integer) o);
+    while (cons != null) {
+      sum += ((Integer) cons.getCar());
+      cons = cons.getCdr();
     }
     return sum;
   }

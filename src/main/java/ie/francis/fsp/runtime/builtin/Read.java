@@ -18,15 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Read extends Function {
-
-  public Read(String name, String descriptor) {
-    super(name, descriptor);
-  }
-
   public Read() {
     super(
         String.format("%s.run", Read.class.getCanonicalName().replace(".", "/")),
-        "(Ljava/lang/Object;)Ljava/lang/Object;");
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        new ArrayList<>(List.of("value")));
   }
 
   static int runs = 0;

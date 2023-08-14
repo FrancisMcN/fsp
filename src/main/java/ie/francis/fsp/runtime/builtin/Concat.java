@@ -4,24 +4,26 @@
 
 package ie.francis.fsp.runtime.builtin;
 
+import ie.francis.fsp.runtime.type.Cons;
 import ie.francis.fsp.runtime.type.Function;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Concat extends Function {
-
-  public Concat(String name, String descriptor) {
-    super(name, descriptor);
-  }
 
   public Concat() {
     super(
         String.format("%s.run", Concat.class.getCanonicalName().replace(".", "/")),
-        "([Ljava/lang/Object;)Ljava/lang/Object;");
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        new ArrayList<>(List.of("&rest", "values")));
   }
 
-  public static Object run(Object... values) {
+  public static Object run(Object object) {
     StringBuilder sb = new StringBuilder();
-    for (Object val : values) {
-      sb.append(val);
+    Cons cons = ((Cons) object);
+    while (cons != null) {
+      sb.append(cons.getCar());
+      cons = cons.getCdr();
     }
     return sb.toString();
   }

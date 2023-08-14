@@ -14,29 +14,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Macro implements DataType {
+public class Macro extends Function {
 
-  private final String name;
-  private final String descriptor;
-
-  public Macro(String name, String descriptor) {
-    this.name = name;
-    this.descriptor = descriptor;
+  public Macro(String name, String descriptor, List<String> params) {
+    super(name, descriptor, params);
   }
 
   @Override
   public Type type() {
     return MACRO;
-  }
-
-  @Override
-  public String name() {
-    return this.name;
-  }
-
-  @Override
-  public String descriptor() {
-    return this.descriptor;
   }
 
   @Override
@@ -59,7 +45,7 @@ public class Macro implements DataType {
     Class<?>[] paramTypes = new Class[params.size()];
     Arrays.fill(paramTypes, Object.class);
     try {
-      //      System.out.println(params);
+      System.out.println(params);
       Object output =
           environment.loadClass(owner).getMethod("run", paramTypes).invoke(null, params.toArray());
       new AcceptorImpl().accept(output, visitor);

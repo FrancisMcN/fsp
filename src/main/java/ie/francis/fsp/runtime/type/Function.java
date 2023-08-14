@@ -7,15 +7,18 @@ package ie.francis.fsp.runtime.type;
 import static ie.francis.fsp.runtime.type.Type.FUNCTION;
 
 import ie.francis.fsp.visitor.Visitor;
+import java.util.List;
 
 public class Function implements DataType {
 
   protected String name;
   protected String descriptor;
+  protected List<String> params;
 
-  public Function(String name, String descriptor) {
+  public Function(String name, String descriptor, List<String> params) {
     this.name = name;
     this.descriptor = descriptor;
+    this.params = params;
   }
 
   @Override
@@ -36,6 +39,10 @@ public class Function implements DataType {
   @Override
   public String toString() {
     return String.format("#%s", name);
+  }
+
+  public List<String> getParams() {
+    return this.params;
   }
 
   @Override

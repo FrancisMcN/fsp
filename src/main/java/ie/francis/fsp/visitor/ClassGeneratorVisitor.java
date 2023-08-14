@@ -81,7 +81,7 @@ public class ClassGeneratorVisitor implements Visitor {
   public void visit(Cons cons) {
 
     if (this.quoteDepth > 0) {
-      compileQuotedList(cons);
+      compileListOfCons(cons);
       return;
     }
 
@@ -90,18 +90,12 @@ public class ClassGeneratorVisitor implements Visitor {
       if (isSpecialForm(car)) {
         compileSpecialForm(car, cons.getCdr());
       } else if (isFunction(car)) {
-        if (isVariadic(car)) {
-          compileArrayOfArguments(cons.getCdr(), true);
-        } else {
-          compileArguments(cons.getCdr(), true);
-        }
+        Function f = ((Function) environment.get(car));
+        compileArguments(f, cons.getCdr(), true);
         compileFunctionCall(car);
       } else if (isMacro(car)) {
-        if (isVariadic(car)) {
-          compileArrayOfArguments(cons.getCdr(), false);
-        } else {
-          compileArguments(cons.getCdr(), false);
-        }
+        Function f = ((Function) environment.get(car));
+        compileArguments(f, cons.getCdr(), false);
         compileMacroCall(car, cons.getCdr());
       }
     } else {
@@ -119,7 +113,7 @@ public class ClassGeneratorVisitor implements Visitor {
         INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
   }
 
-  private void compileQuotedList(Cons cons) {
+  private void compileListOfCons(Cons cons) {
 
     mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/helper/ConsBuilder");
     mv.visitInsn(DUP);
@@ -170,56 +164,30 @@ public class ClassGeneratorVisitor implements Visitor {
     return false;
   }
 
-  private void compileArguments(Cons cons, boolean evaluate) {
+  private void compileArguments(Function f, Cons cons, boolean evaluate) {
     if (!evaluate) {
       this.quoteDepth++;
     }
-    while (cons != null) {
-      acceptor.accept(cons.getCar(), this);
-      cons = cons.getCdr();
-    }
-    if (!evaluate) {
-      this.quoteDepth--;
-    }
-  }
-
-  private void compileArrayOfArguments(Cons cons, boolean evaluate) {
-
-    if (cons == null) {
-      // If variadic function has no arguments passed to it
-      // just create an empty array
-      mv.visitLdcInsn(0);
-      mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
-      return;
-    }
-
-    int size = cons.size();
-    // Specify array size first
-    mv.visitLdcInsn(size);
-    // Create a new array of Objects
-    mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
-    mv.visitInsn(DUP);
-    if (!evaluate) {
-      this.quoteDepth++;
+    int restParam = -1;
+    List<String> params = f.getParams();
+    if (params.get((params.size() - 2) % params.size()).equals("&rest")) {
+      restParam = (params.size() - 2) % params.size();
     }
     int i = 0;
     while (cons != null) {
-      mv.visitLdcInsn(i);
+
+      if (i == restParam) {
+        compileListOfCons(cons);
+        mv.visitInsn(DUP);
+        break;
+      }
       acceptor.accept(cons.getCar(), this);
       cons = cons.getCdr();
-      mv.visitInsn(AASTORE);
-      if (i < size - 1) {
-        mv.visitInsn(DUP);
-      }
       i++;
     }
     if (!evaluate) {
       this.quoteDepth--;
     }
-  }
-
-  private boolean isVariadic(Symbol symbol) {
-    return ((DataType) environment.get(symbol)).descriptor().startsWith("([");
   }
 
   private boolean isFunction(Symbol symbol) {
@@ -320,7 +288,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
     String descriptor = "(" + "Ljava/lang/Object;".repeat(paramCount) + ")Ljava/lang/Object;";
 
-    environment.put(macroName, new Macro(className + ".run", descriptor));
+    environment.put(macroName, new Macro(className + ".run", descriptor, args));
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
     cons = cons.getCdr().getCdr();
     acceptor.accept(cons.getCar(), cgv);
@@ -375,7 +343,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
     String descriptor = "(" + "Ljava/lang/Object;".repeat(paramCount) + ")Ljava/lang/Object;";
 
-    environment.put(functionName, new Function(className + ".run", descriptor));
+    environment.put(functionName, new Function(className + ".run", descriptor, args));
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, args, environment);
     cgv.blockDepth++;
     cons = cons.getCdr().getCdr();
