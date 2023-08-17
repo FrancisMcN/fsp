@@ -13,11 +13,11 @@ import ie.francis.fsp.visitor.ClassGeneratorVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Macroexpand extends Function {
+public class Macroexpand1 extends Function {
 
-  public Macroexpand() {
+  public Macroexpand1() {
     super(
-        String.format("%s.run", Macroexpand.class.getCanonicalName().replace(".", "/")),
+        String.format("%s.run", Macroexpand1.class.getCanonicalName().replace(".", "/")),
         "(Ljava/lang/Object;)Ljava/lang/Object;",
         new ArrayList<>(List.of("macro")));
   }
@@ -31,6 +31,7 @@ public class Macroexpand extends Function {
             environment,
             new ClassGeneratorVisitor(
                 "Test" + ((Symbol) ((Cons) value).getCar()).name(),
+                "()Ljava/lang/Object;",
                 new ArrayList<>(),
                 environment));
   }

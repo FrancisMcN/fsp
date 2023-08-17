@@ -13,9 +13,9 @@ public class Function implements DataType {
 
   protected String name;
   protected String descriptor;
-  protected List<String> params;
+  protected List<Object> params;
 
-  public Function(String name, String descriptor, List<String> params) {
+  public Function(String name, String descriptor, List<Object> params) {
     this.name = name;
     this.descriptor = descriptor;
     this.params = params;
@@ -41,7 +41,7 @@ public class Function implements DataType {
     return String.format("#%s", name);
   }
 
-  public List<String> getParams() {
+  public List<Object> getParams() {
     return this.params;
   }
 

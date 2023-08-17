@@ -7,7 +7,9 @@ package ie.francis.fsp.runtime.type;
 import static ie.francis.fsp.runtime.type.Type.MACRO;
 
 import ie.francis.fsp.environment.Environment;
-import ie.francis.fsp.visitor.AcceptorImpl;
+import ie.francis.fsp.lambda.SpecialParameterGroup;
+import ie.francis.fsp.lambda.SpecialParameterParser;
+import ie.francis.fsp.runtime.helper.ConsBuilder;
 import ie.francis.fsp.visitor.Visitor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -16,7 +18,7 @@ import java.util.List;
 
 public class Macro extends Function {
 
-  public Macro(String name, String descriptor, List<String> params) {
+  public Macro(String name, String descriptor, List<Object> params) {
     super(name, descriptor, params);
   }
 
@@ -37,19 +39,31 @@ public class Macro extends Function {
 
   public Object expand(Cons cons, Environment environment, Visitor visitor) {
     String owner = name().split("\\.")[0];
-    List<Object> params = new ArrayList<>();
+
+    SpecialParameterParser specialParameterParser = new SpecialParameterParser(getParams());
+    SpecialParameterGroup specialLambdaParameters = specialParameterParser.parse();
+    List<Object> p = new ArrayList<>();
+    int i = 0;
+
     while (cons != null) {
-      params.add(cons.getCar());
+      if (i == specialLambdaParameters.getRestParameter()) {
+        ConsBuilder consBuilder = new ConsBuilder();
+        while (cons != null) {
+          consBuilder.add(cons.getCar());
+          cons = cons.getCdr();
+        }
+        p.add(consBuilder.getCons());
+
+        break;
+      }
+      p.add(cons.getCar());
       cons = cons.getCdr();
+      i++;
     }
-    Class<?>[] paramTypes = new Class[params.size()];
+    Class<?>[] paramTypes = new Class[p.size()];
     Arrays.fill(paramTypes, Object.class);
     try {
-      System.out.println(params);
-      Object output =
-          environment.loadClass(owner).getMethod("run", paramTypes).invoke(null, params.toArray());
-      new AcceptorImpl().accept(output, visitor);
-      return output;
+      return environment.loadClass(owner).getMethod("run", paramTypes).invoke(null, p.toArray());
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
     }
