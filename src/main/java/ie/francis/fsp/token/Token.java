@@ -4,6 +4,8 @@
 
 package ie.francis.fsp.token;
 
+import java.util.Objects;
+
 public class Token {
 
   private final Type type;
@@ -27,6 +29,19 @@ public class Token {
 
   public int getLineNo() {
     return lineNo;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Token token = (Token) o;
+    return lineNo == token.lineNo && type == token.type && Objects.equals(value, token.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, value, lineNo);
   }
 
   @Override

@@ -78,10 +78,11 @@ public class Scanner {
     return new Token(Type.EOF, "eof", lineNo);
   }
 
-  private boolean isReaderMacro(char character) {
+  boolean isReaderMacro(char character) {
     switch (character) {
       case '\'':
       case '@':
+      case '`':
         return true;
     }
     return false;
@@ -136,7 +137,7 @@ public class Scanner {
     return new Token(Type.SYMBOL, sb.toString(), lineNo);
   }
 
-  private boolean isSpecialOrWhitespace(char character) {
+  boolean isSpecialOrWhitespace(char character) {
     if (isSpecial(character)) {
       return true;
     }

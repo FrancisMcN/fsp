@@ -16,7 +16,7 @@ public class DerefReaderMacro implements ReaderMacro {
     ConsBuilder consBuilder = new ConsBuilder();
     consBuilder.add(new Symbol("quote"));
     ConsBuilder consBuilder2 = new ConsBuilder();
-    consBuilder2.add("deref");
+    consBuilder2.add(new Symbol("deref"));
     consBuilder2.add(object);
     consBuilder.add(consBuilder2.getCons());
     return consBuilder.getCons();

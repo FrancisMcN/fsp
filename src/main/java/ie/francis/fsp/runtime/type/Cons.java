@@ -15,6 +15,11 @@ public class Cons implements DataType {
 
   public Cons() {}
 
+  public Cons(Object car, Cons cdr) {
+    this.car = car;
+    this.cdr = cdr;
+  }
+
   public void setCar(Object car) {
     if (car instanceof Atom) {
       this.car = ((Atom) car).unwrap();

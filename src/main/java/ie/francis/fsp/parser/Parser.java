@@ -137,4 +137,8 @@ public class Parser {
         }
     }
   }
+
+  public Map<String, ReaderMacro> getReaderMacros() {
+    return readerMacros;
+  }
 }
