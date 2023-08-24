@@ -1,13 +1,13 @@
-package parser;
+package ie.francis.fsp.parser;
 
 import ie.francis.fsp.exception.SyntaxErrorException;
-import ie.francis.fsp.parser.Parser;
 import ie.francis.fsp.runtime.rmacro.DerefReaderMacro;
 import ie.francis.fsp.runtime.type.Atom;
 import ie.francis.fsp.runtime.type.Cons;
 import ie.francis.fsp.runtime.type.DataType;
 import ie.francis.fsp.runtime.type.Symbol;
 import ie.francis.fsp.scanner.Scanner;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +61,7 @@ class ParserTest {
         cons = cons.getCdr();
         assertTrue(cons.getCar() instanceof Boolean);
         cons = cons.getCdr();
-        assertNull(cons);
+        Assertions.assertNull(cons);
 
     }
 
@@ -70,7 +70,7 @@ class ParserTest {
         Scanner scanner = new Scanner("42");
         parser = new Parser(scanner);
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         assertTrue(expression instanceof Atom);
         assertEquals(42, ((Atom) expression).getInteger());
     }
@@ -80,7 +80,7 @@ class ParserTest {
         Scanner scanner = new Scanner("\"hello\"");
         parser = new Parser(scanner);
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         assertTrue(expression instanceof Atom);
         assertEquals("hello", ((Atom) expression).getString());
     }
@@ -90,7 +90,7 @@ class ParserTest {
         Scanner scanner = new Scanner("true");
         parser = new Parser(scanner);
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         assertTrue(expression instanceof Atom);
         assertEquals(true, ((Atom) expression).getBool());
     }
@@ -100,17 +100,17 @@ class ParserTest {
         Scanner scanner = new Scanner("(cons 1 2)");
         parser = new Parser(scanner);
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         assertTrue(expression instanceof Cons);
         assertEquals(new Symbol("cons"), ((Cons) expression).getCar());
 
         Cons cdr = ((Cons) expression).getCdr();
         assertEquals(1, (cdr.getCar()));
 
-        assertNotNull(cdr.getCdr());
+        Assertions.assertNotNull(cdr.getCdr());
         assertEquals(2, (cdr.getCdr().getCar()));
 
-        assertNull(cdr.getCdr().getCdr());
+        Assertions.assertNull(cdr.getCdr().getCdr());
     }
 
     @Test
@@ -118,7 +118,7 @@ class ParserTest {
         Scanner scanner = new Scanner("(cons (cons 1 2) 3)");
         parser = new Parser(scanner);
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         assertTrue(expression instanceof Cons);
         assertEquals(new Symbol("cons"), ((Cons) expression).getCar());
 
@@ -126,13 +126,13 @@ class ParserTest {
         assertTrue(cdr.getCar() instanceof Cons);
         assertEquals(1, ((Cons) cdr.getCar()).getCdr().getCar());
 
-        assertNotNull(((Cons) cdr.getCar()).getCdr());
+        Assertions.assertNotNull(((Cons) cdr.getCar()).getCdr());
         assertEquals(2, ((Cons) cdr.getCar()).getCdr().getCdr().getCar());
 
-        assertNotNull(cdr.getCdr());
+        Assertions.assertNotNull(cdr.getCdr());
         assertEquals(3, cdr.getCdr().getCar());
 
-        assertNull(cdr.getCdr().getCdr());
+        Assertions.assertNull(cdr.getCdr().getCdr());
     }
 
     @Test
@@ -140,13 +140,13 @@ class ParserTest {
         Scanner scanner = new Scanner("'42");
         parser = new Parser(scanner);
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         Cons cons = (Cons) expression;
         assertEquals(new Symbol("quote"), cons.getCar());
 
         Cons cdr = ((Cons) expression).getCdr();
         assertEquals(42, cdr.getCar());
-        assertNull(cdr.getCdr());
+        Assertions.assertNull(cdr.getCdr());
     }
 
     @Test
@@ -155,7 +155,7 @@ class ParserTest {
         parser = new Parser(scanner);
         parser.getReaderMacros().put("@", new DerefReaderMacro());
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         Cons cons = (Cons) expression;
         assertEquals(new Symbol("quote"), cons.getCar());
 
@@ -163,7 +163,7 @@ class ParserTest {
 
         Cons cdr = ((Cons)((Cons) expression).getCdr().getCar()).getCdr();
         assertEquals(new Symbol("myVar"), cdr.getCar());
-        assertNull(cdr.getCdr());
+        Assertions.assertNull(cdr.getCdr());
     }
 
     @Test
@@ -172,7 +172,7 @@ class ParserTest {
         parser = new Parser(scanner);
         parser.getReaderMacros().put("@", new DerefReaderMacro());
 
-        DataType expression = parser.sxpr();
+        DataType expression = parser.rmacro_expr();
         assertEquals(new Symbol("quote"), ((Cons) expression).getCar());
 
         Cons cdr = ((Cons) expression).getCdr();
@@ -187,8 +187,43 @@ class ParserTest {
         Cons innerCdr = innerCons.getCdr();
         assertEquals(42, innerCdr.getCar());
 
-        assertNull(innerCdr.getCdr());
-        assertNull(cdr.getCdr());
+        Assertions.assertNull(innerCdr.getCdr());
+        Assertions.assertNull(cdr.getCdr());
+    }
+
+    @Test
+    void testParseNestedLists() throws SyntaxErrorException {
+        Scanner scanner = new Scanner("((1 2) (3 4))");
+        parser = new Parser(scanner);
+        List<DataType> result = parser.parse();
+        assertEquals(1, result.size());
+        assertTrue(result.get(0) instanceof Cons);
+        Cons outerCons = (Cons) result.get(0);
+        assertTrue(outerCons.getCar() instanceof Cons);
+        assertNotNull(outerCons.getCdr());
+    }
+
+    @Test
+    void testMissingClosingParentheses() {
+        Scanner scanner = new Scanner("(+ 1 2");
+        parser = new Parser(scanner);
+        assertThrows(SyntaxErrorException.class, () -> parser.parse());
+    }
+
+    @Test
+    void testMissingOpeningParentheses() {
+        Scanner scanner = new Scanner("+ 1 2)");
+        parser = new Parser(scanner);
+        assertThrows(SyntaxErrorException.class, () -> parser.parse());
+    }
+
+    @Test
+    void testParseFloatingPointNumber() throws SyntaxErrorException {
+        Scanner scanner = new Scanner("(3.14)");
+        parser = new Parser(scanner);
+        List<DataType> result = parser.parse();
+        assertEquals(1, result.size());
+        assertEquals(3.14f, ((Cons) result.get(0)).getCar());
     }
 
 }

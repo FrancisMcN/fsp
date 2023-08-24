@@ -9,7 +9,9 @@ import ie.francis.fsp.runtime.helper.ConsBuilder;
 import ie.francis.fsp.runtime.rmacro.DerefReaderMacro;
 import ie.francis.fsp.runtime.rmacro.QuoteReaderMacro;
 import ie.francis.fsp.runtime.rmacro.ReaderMacro;
-import ie.francis.fsp.runtime.type.*;
+import ie.francis.fsp.runtime.type.Atom;
+import ie.francis.fsp.runtime.type.DataType;
+import ie.francis.fsp.runtime.type.Symbol;
 import ie.francis.fsp.scanner.Scanner;
 import ie.francis.fsp.token.Token;
 import ie.francis.fsp.token.Type;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Parser {
+
   private final Scanner scanner;
   private final Map<String, ReaderMacro> readerMacros;
 
@@ -31,83 +34,41 @@ public class Parser {
     this.readerMacros.put(derefReaderMacro.character(), derefReaderMacro);
   }
 
-  // prog : sxpr*
-  // sxpr : atom | list
-  // list : '(' sxpr+ ['.' sxpr]? ')'
-  // atom : SYMBOL | NUMBER | STRING | BOOLEAN | ε
-
+  // prog        : rmacro_expr
+  // rmacro_expr : RMACRO? rmacro_expr | expr
+  // expr        : SYMBOL | STRING | NUMBER | BOOLEAN | list
+  // list        : '(' seq ')'
+  // seq         : rmacro_expr*
   public List<DataType> parse() throws SyntaxErrorException {
-    List<DataType> expressions = new ArrayList<>();
-    while (scanner.peek().getType() != Type.EOF) {
-      expressions.add(sxpr());
+    List<DataType> exprs = new ArrayList<>();
+    while (scanner.hasNext()) {
+      exprs.add(rmacro_expr());
     }
-    return expressions;
+    return exprs;
   }
 
-  // sxpr : ( RMACRO sxpr) | atom | '(' sxpr '.' sxpr ')' | list
-  public DataType sxpr() throws SyntaxErrorException {
-    Token token = scanner.peek();
-
-    if (token.getType() == Type.RMACRO) {
+  protected DataType rmacro_expr() throws SyntaxErrorException {
+    if (scanner.peek().getType() == Type.RMACRO) {
+      Token token = scanner.peek();
       scanner.next();
-      return (DataType) readerMacros.get(token.getValue()).expand(sxpr());
+      return ((DataType) readerMacros.get(token.getValue()).expand(rmacro_expr()));
     }
-
-    if (token.getType() == Type.SYMBOL
-        || token.getType() == Type.NUMBER
-        || token.getType() == Type.STRING
-        || token.getType() == Type.BOOLEAN) {
-      return atom();
-    }
-
-    Token peek = scanner.peek();
-    if (peek.getType() != Type.LPAREN
-        && peek.getType() != Type.SYMBOL
-        && peek.getType() != Type.NUMBER
-        && peek.getType() != Type.STRING
-        && peek.getType() != Type.BOOLEAN) {
-      throw new SyntaxErrorException(
-          String.format(
-              "expected '(', symbol, number or a string but found: %s on line %d",
-              token.getType(), token.getLineNo()));
-    }
-    return list();
+    return expr();
   }
 
-  // list : '(' sxpr* ['.' sxpr]? ')'
-  public DataType list() {
-    ConsBuilder consBuilder = new ConsBuilder();
-    scanner.next();
-    while (scanner.peek().getType() != Type.RPAREN && scanner.peek().getType() != Type.DOT) {
-      consBuilder.add(sxpr());
-    }
-
-    Token token = scanner.peek();
-    //        if (token.getType() == Type.DOT) {
-    //            scanner.next();
-    //            SxprNode sxprNode = new SxprNode();
-    //            sxprNode.setCar(list.getNodes().remove(list.getNodes().size() - 1));
-    //            sxprNode.setCdr(sxpr());
-    //            list.addNode(sxprNode);
-    //        }
-
-    if (scanner.peek().getType() != Type.RPAREN) {
-      throw new SyntaxErrorException(
-          String.format("expected ')', found: %s on line %d", token.getType(), token.getLineNo()));
-    }
-
-    scanner.next();
-    return consBuilder.getCons();
-  }
-
-  // atom : SYMBOL | NUMBER | STRING | BOOLEAN | ε
-  private DataType atom() throws SyntaxErrorException {
+  // expr : SYMBOL | STRING | NUMBER | BOOLEAN | list
+  protected DataType expr() throws SyntaxErrorException {
     Token token = scanner.peek();
     switch (token.getType()) {
       case SYMBOL:
         {
           scanner.next();
           return new Atom(new Symbol(token.getValue()));
+        }
+      case STRING:
+        {
+          scanner.next();
+          return new Atom(token.getValue());
         }
       case NUMBER:
         {
@@ -118,27 +79,50 @@ public class Parser {
           }
           return new Atom(Integer.parseInt(tokenValue));
         }
-      case STRING:
-        {
-          scanner.next();
-          return new Atom(token.getValue());
-        }
       case BOOLEAN:
         {
           scanner.next();
           return new Atom(Boolean.parseBoolean(token.getValue()));
         }
+      case LPAREN:
+        return list();
       default:
-        {
-          throw new SyntaxErrorException(
-              String.format(
-                  "expected symbol, number, string or list. Found: %s on line %d",
-                  token.getType(), token.getLineNo()));
-        }
+        throw new SyntaxErrorException("syntax error");
     }
   }
 
-  public Map<String, ReaderMacro> getReaderMacros() {
+  // list : '(' seq ')'
+  protected DataType list() throws SyntaxErrorException {
+    scanner.next();
+
+    DataType seq = seq();
+
+    Token token = scanner.peek();
+    if (token.getType() != Type.RPAREN) {
+      throw new SyntaxErrorException("expected ')', found: " + token);
+    }
+    scanner.next();
+
+    return seq;
+  }
+
+  // seq : expr*
+  protected DataType seq() throws SyntaxErrorException {
+    Token token = scanner.peek();
+
+    ConsBuilder consBuilder = new ConsBuilder();
+    while (token.getType() == Type.SYMBOL
+        || token.getType() == Type.STRING
+        || token.getType() == Type.NUMBER
+        || token.getType() == Type.BOOLEAN
+        || token.getType() == Type.LPAREN) {
+      consBuilder.add(rmacro_expr());
+      token = scanner.peek();
+    }
+    return consBuilder.getCons();
+  }
+
+  protected Map<String, ReaderMacro> getReaderMacros() {
     return readerMacros;
   }
 }
