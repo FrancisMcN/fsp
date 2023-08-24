@@ -21,7 +21,7 @@ public class Scanner {
   }
 
   public boolean hasNext() {
-    return ptr < input.length();
+    return peek().getType() != Type.EOF;
   }
 
   public Token peek() {

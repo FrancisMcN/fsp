@@ -2,10 +2,7 @@ package ie.francis.fsp.parser;
 
 import ie.francis.fsp.exception.SyntaxErrorException;
 import ie.francis.fsp.runtime.rmacro.DerefReaderMacro;
-import ie.francis.fsp.runtime.type.Atom;
-import ie.francis.fsp.runtime.type.Cons;
-import ie.francis.fsp.runtime.type.DataType;
-import ie.francis.fsp.runtime.type.Symbol;
+import ie.francis.fsp.runtime.type.*;
 import ie.francis.fsp.scanner.Scanner;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -224,6 +221,25 @@ class ParserTest {
         List<DataType> result = parser.parse();
         assertEquals(1, result.size());
         assertEquals(3.14f, ((Cons) result.get(0)).getCar());
+    }
+
+    @Test
+    void testParseListOfQuotedSymbols() throws SyntaxErrorException {
+        Scanner scanner = new Scanner("( 'a 'b )");
+        parser = new Parser(scanner);
+        List<DataType> result = parser.parse();
+        assertEquals(result.get(0).type(), Type.CONS);
+
+        Cons cons = (Cons) result.get(0);
+        assertEquals(Type.CONS, ((DataType)cons.getCar()).type());
+        assertEquals(Type.SYMBOL, ((DataType)((Cons)cons.getCar()).getCar()).type());
+        assertEquals(Type.SYMBOL, ((DataType)((Cons)cons.getCar()).getCdr().getCar()).type());
+        assertEquals(new Symbol("a"), (((Cons)cons.getCar()).getCdr().getCar()));
+
+        assertEquals(Type.CONS, ((DataType)cons.getCdr().getCar()).type());
+        assertEquals(Type.SYMBOL, ((DataType)(((Cons)cons.getCdr().getCar()).getCar())).type());
+        assertEquals(Type.SYMBOL, ((DataType)((Cons)(cons.getCdr()).getCar()).getCdr().getCar()).type());
+        assertEquals(new Symbol("b"), ((Cons)(cons.getCdr()).getCar()).getCdr().getCar());
     }
 
 }

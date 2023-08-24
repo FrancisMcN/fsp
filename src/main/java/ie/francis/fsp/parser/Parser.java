@@ -87,6 +87,7 @@ public class Parser {
       case LPAREN:
         return list();
       default:
+        System.out.println(scanner.peek());
         throw new SyntaxErrorException("syntax error");
     }
   }
@@ -115,7 +116,8 @@ public class Parser {
         || token.getType() == Type.STRING
         || token.getType() == Type.NUMBER
         || token.getType() == Type.BOOLEAN
-        || token.getType() == Type.LPAREN) {
+        || token.getType() == Type.LPAREN
+        || token.getType() == Type.RMACRO) {
       consBuilder.add(rmacro_expr());
       token = scanner.peek();
     }
