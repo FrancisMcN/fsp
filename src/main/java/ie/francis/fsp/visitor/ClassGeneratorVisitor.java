@@ -90,7 +90,6 @@ public class ClassGeneratorVisitor implements Visitor {
     }
 
     //    if (cons.getCar() instanceof Symbol) {
-
     if (isSpecialForm(cons)) {
       compileSpecialForm(cons);
     } else if (isFunction(cons)) {
@@ -482,6 +481,8 @@ public class ClassGeneratorVisitor implements Visitor {
       //      System.out.println("--------------------");
     } else if (environment.contains(symbol)) {
       acceptor.accept(environment.get(symbol), this);
+    } else {
+      throw new RuntimeException(String.format("symbol '%s' is not defined", symbol.name()));
     }
   }
 
