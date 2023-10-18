@@ -35,8 +35,7 @@ public class Read extends Function {
     Parser parser = new Parser(scanner);
     List<DataType> prog = parser.parse();
     ClassGeneratorVisitor compileVisitor =
-        new ClassGeneratorVisitor(
-            "Test" + String.valueOf(runs), "()Ljava/lang/Object;", new ArrayList<>(), environment);
+        new ClassGeneratorVisitor("Repl", "()Ljava/lang/Object;", new ArrayList<>(), environment);
     for (DataType expression : prog) {
       acceptor.accept(expression, compileVisitor);
     }

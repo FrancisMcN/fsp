@@ -25,14 +25,13 @@ public class Macroexpand1 extends Function {
   public static Object run(Object value) {
     Cons cons = (Cons) value;
     Environment environment = Environment.singleton();
+    ClassGeneratorVisitor visitor =
+        new ClassGeneratorVisitor(
+            "Test" + ((Symbol) ((Cons) value).getCar()).name(),
+            "()Ljava/lang/Object;",
+            new ArrayList<>(),
+            environment);
     return ((Macro) (environment.get((Symbol) ((Cons) value).getCar())))
-        .expand(
-            cons.getCdr(),
-            environment,
-            new ClassGeneratorVisitor(
-                "Test" + ((Symbol) ((Cons) value).getCar()).name(),
-                "()Ljava/lang/Object;",
-                new ArrayList<>(),
-                environment));
+        .expand(cons.getCdr(), environment, visitor);
   }
 }

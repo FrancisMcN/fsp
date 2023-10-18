@@ -16,8 +16,11 @@ public class Environment {
   private final Map<String, Object> env;
   private final ParentCustomClassLoader classLoader;
 
+  private final Map<String, byte[]> classes;
+
   public Environment() {
     env = new HashMap<>();
+    classes = new HashMap<>();
     classLoader = new ParentCustomClassLoader();
     if (Environment.singleton == null) {
       Environment.singleton = this;
@@ -44,8 +47,19 @@ public class Environment {
     return classLoader.defineClass(className, bytes);
   }
 
+  public Class<?> loadClass(String className, byte[] bytes, boolean store) {
+    if (store) {
+      classes.put(className, bytes);
+    }
+    return loadClass(className, bytes);
+  }
+
   public Class<?> loadClass(String className) {
     return classLoader.getClassloaders().get(className).getClazz();
+  }
+
+  public byte[] getClassBytes(String className) {
+    return classes.get(className);
   }
 
   public void loadBuiltins() {

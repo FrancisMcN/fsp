@@ -7,6 +7,7 @@ package ie.francis.fsp.visitor;
 import static ie.francis.fsp.runtime.type.Type.*;
 import static org.objectweb.asm.Opcodes.*;
 
+import ie.francis.fsp.classvisitor.MethodReplaceClassWriter;
 import ie.francis.fsp.environment.Environment;
 import ie.francis.fsp.lambda.SpecialParameter;
 import ie.francis.fsp.lambda.SpecialParameterGroup;
@@ -18,17 +19,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
 public class ClassGeneratorVisitor implements Visitor {
 
   private final String className;
   private final Environment environment;
-  private final ClassWriter cw;
+  private final MethodReplaceClassWriter cw;
   private final MethodVisitor mv;
 
   private int quoteDepth = 0;
@@ -37,8 +35,17 @@ public class ClassGeneratorVisitor implements Visitor {
 
   private final Map<String, Integer> vars;
 
-  private final LocalVariablesSorter lvs;
+  private LocalVariablesSorter lvs;
   private final Acceptor acceptor;
+
+  //  public ClassGeneratorVisitor(String className, Environment environment) {
+  //    byte[] classBytes = environment.getClassBytes(className);
+  //      final ClassReader classReader = new ClassReader(classBytes);
+  //      final ClassWriter cw = new ClassWriter(classReader,
+  //              ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS);
+  //      classReader.accept(new MyTransformer(cw), ClassReader.EXPAND_FRAMES);
+  ////      return cw.toByteArray();
+  //  }
 
   public ClassGeneratorVisitor(
       String className, String descriptor, List<Object> parameters, Environment environment) {
@@ -48,7 +55,12 @@ public class ClassGeneratorVisitor implements Visitor {
     this.environment = environment;
     this.vars = new HashMap<>();
 
-    cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+    if (environment.getClassBytes(className) != null) {
+      byte[] classBytes = environment.getClassBytes(className);
+      cw = new MethodReplaceClassWriter(classBytes, ASM9);
+    } else {
+      cw = new MethodReplaceClassWriter(ASM9);
+    }
     cw.visit(
         V1_5,
         ACC_PUBLIC + ACC_MODULE,
@@ -65,11 +77,16 @@ public class ClassGeneratorVisitor implements Visitor {
       }
     }
 
-    mv.visitCode();
+    if (mv != null) {
+      mv.visitCode();
+    }
   }
 
   @Override
   public void visit(Integer integer) {
+    if (mv == null) {
+      return;
+    }
     mv.visitLdcInsn(integer);
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
@@ -77,13 +94,18 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(Float floating) {
+    if (mv == null) {
+      return;
+    }
     mv.visitLdcInsn(floating);
     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
   }
 
   @Override
   public void visit(Cons cons) {
-
+    if (mv == null) {
+      return;
+    }
     if (this.quoteDepth > 0) {
       compileListOfCons(cons);
       return;
@@ -96,7 +118,7 @@ public class ClassGeneratorVisitor implements Visitor {
       Symbol car = (Symbol) cons.getCar();
       Function f = ((Function) environment.get(car));
       compileArguments(f, cons.getCdr(), true);
-      compileFunctionCall(car);
+      compileFunctionCall(car, cons.getCdr());
     } else if (isMacro(cons)) {
       if (macroDepth == 0) {
         Symbol car = (Symbol) cons.getCar();
@@ -126,13 +148,18 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(Boolean bool) {
+    if (mv == null) {
+      return;
+    }
     mv.visitLdcInsn(bool);
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
   }
 
   private void compileListOfCons(Cons cons) {
-
+    if (mv == null) {
+      return;
+    }
     mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/helper/ConsBuilder");
     mv.visitInsn(DUP);
     mv.visitMethodInsn(
@@ -172,11 +199,26 @@ public class ClassGeneratorVisitor implements Visitor {
     acceptor.accept(object, this);
   }
 
-  private void compileFunctionCall(Symbol symbol) {
+  private void compileFunctionCall(Symbol symbol, Cons cons) {
+    if (mv == null) {
+      return;
+    }
     Function function = (Function) environment.get(symbol);
     String owner = function.name().split("\\.")[0];
     String functionName = function.name().split("\\.")[1];
-    mv.visitMethodInsn(INVOKESTATIC, owner, functionName, function.descriptor(), false);
+    int arity = 0;
+    if (cons != null) {
+      arity = cons.size();
+    }
+    if (function.getParams().contains(new Symbol("&rest"))) {
+      arity = Math.min(arity, function.getParams().size() - 1);
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("(");
+    sb.append("Ljava/lang/Object;".repeat(Math.max(0, arity)));
+    sb.append(")Ljava/lang/Object;");
+    mv.visitMethodInsn(INVOKESTATIC, owner, functionName, sb.toString(), false);
   }
 
   private boolean isMacro(Cons cons) {
@@ -250,6 +292,9 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private void compileLetSpecialForm(Cons cons) {
+    if (mv == null) {
+      return;
+    }
     String name = cons.getCar().toString();
     if (blockDepth > 0) {
       String descriptor = findTypeDescriptor(cons.getCdr().getCar());
@@ -279,6 +324,9 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private void compileLoadSpecialForm(Cons cons) {
+    if (mv == null) {
+      return;
+    }
     String data;
     try {
       data = Files.readString(Path.of(cons.getCar().toString()));
@@ -290,6 +338,9 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private void compilePrognSpecialForm(Cons cons) {
+    if (mv == null) {
+      return;
+    }
     while (cons != null) {
       acceptor.accept(cons.getCar(), this);
       // Ignore all but final return value
@@ -301,6 +352,9 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private void compileDefMacroSpecialForm(Cons cons) {
+    if (mv == null) {
+      return;
+    }
     String functionName = ((Symbol) (cons.getCar())).name();
     String className = functionName.substring(0, 1).toUpperCase() + functionName.substring(1);
     className = className.replace(".", "_dot_");
@@ -319,6 +373,7 @@ public class ClassGeneratorVisitor implements Visitor {
 
     String descriptor = "(" + "Ljava/lang/Object;".repeat(paramCount) + ")Ljava/lang/Object;";
     environment.put(functionName, new Macro(className + ".run", descriptor, args));
+
     ClassGeneratorVisitor cgv = new ClassGeneratorVisitor(className, descriptor, args, environment);
     cgv.blockDepth++;
     cgv.macroDepth++;
@@ -331,7 +386,7 @@ public class ClassGeneratorVisitor implements Visitor {
     cgv.blockDepth--;
     cgv.write();
 
-    environment.loadClass(className, cgv.generate());
+    environment.loadClass(className, cgv.generate(), true);
     mv.visitInsn(ACONST_NULL);
     //    String macroName = ((Symbol) (cons.getCar())).name();
     //    String className = macroName.substring(0, 1).toUpperCase() + macroName.substring(1);
@@ -362,6 +417,9 @@ public class ClassGeneratorVisitor implements Visitor {
   }
 
   private void compileFuncSpecialForm(Cons cons) {
+    if (mv == null) {
+      return;
+    }
     String functionName = ((Symbol) (cons.getCar())).name();
     String className = functionName.substring(0, 1).toUpperCase() + functionName.substring(1);
     className = className.replace(".", "_dot_");
@@ -390,12 +448,14 @@ public class ClassGeneratorVisitor implements Visitor {
     cgv.blockDepth--;
     cgv.write();
 
-    environment.loadClass(className, cgv.generate());
+    environment.loadClass(className, cgv.generate(), true);
     mv.visitInsn(ACONST_NULL);
   }
 
   private void compileIfSpecialForm(Cons cons) {
-
+    if (mv == null) {
+      return;
+    }
     // Compile condition, expecting a Cons cell
     acceptor.accept(cons.getCar(), this);
 
@@ -460,6 +520,9 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(Symbol symbol) {
+    if (mv == null) {
+      return;
+    }
     if (quoteDepth > 0) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fsp/runtime/type/Symbol");
       mv.visitInsn(DUP);
@@ -488,6 +551,9 @@ public class ClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(String str) {
+    if (mv == null) {
+      return;
+    }
     mv.visitLdcInsn(str);
   }
 
@@ -520,6 +586,10 @@ public class ClassGeneratorVisitor implements Visitor {
   public void visit(Macro macro) {}
 
   public byte[] generate() {
+    if (mv == null) {
+      cw.visitEnd();
+      return cw.toByteArray();
+    }
     mv.visitInsn(ARETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();

@@ -51,7 +51,8 @@ public class Main {
       try {
         repl.eval(input, true);
       } catch (Exception ex) {
-        System.err.println(ex.getMessage());
+        ex.printStackTrace();
+        //        System.err.println(ex.getMessage());
       }
     }
   }
