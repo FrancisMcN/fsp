@@ -6,6 +6,7 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.LIST_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +25,11 @@ public class ListNode implements Node {
   @Override
   public NodeType type() {
     return LIST_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override

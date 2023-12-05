@@ -6,6 +6,7 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.LAMBDA_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
 import java.util.List;
 
 public class LambdaNode implements Node {
@@ -31,6 +32,11 @@ public class LambdaNode implements Node {
   @Override
   public NodeType type() {
     return LAMBDA_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override

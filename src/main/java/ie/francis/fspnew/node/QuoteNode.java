@@ -6,6 +6,8 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.QUOTE_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
+
 public class QuoteNode implements Node {
 
   private final Node value;
@@ -17,6 +19,11 @@ public class QuoteNode implements Node {
   @Override
   public NodeType type() {
     return QUOTE_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override

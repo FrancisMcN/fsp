@@ -13,5 +13,7 @@ public enum NodeType {
   IF_NODE,
   QUOTE_NODE,
   LAMBDA_NODE,
-  LIST_NODE
+  LIST_NODE,
+
+  LET_NODE
 }

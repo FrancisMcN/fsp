@@ -6,6 +6,8 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.IF_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
+
 public class IfNode implements Node {
 
   private Node condition;
@@ -43,6 +45,11 @@ public class IfNode implements Node {
   @Override
   public NodeType type() {
     return IF_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override

@@ -6,6 +6,8 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.BOOLEAN_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
+
 public class BooleanNode implements Node {
 
   private final boolean value;
@@ -17,6 +19,11 @@ public class BooleanNode implements Node {
   @Override
   public NodeType type() {
     return BOOLEAN_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override

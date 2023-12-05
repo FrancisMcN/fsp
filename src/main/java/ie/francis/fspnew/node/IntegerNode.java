@@ -6,6 +6,8 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.INTEGER_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
+
 public class IntegerNode implements Node {
   private final int value;
 
@@ -16,6 +18,11 @@ public class IntegerNode implements Node {
   @Override
   public NodeType type() {
     return INTEGER_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override

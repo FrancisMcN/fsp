@@ -4,8 +4,7 @@
 
 package ie.francis.fspnew.parser;
 
-import static ie.francis.fspnew.token.Type.RPAREN;
-import static ie.francis.fspnew.token.Type.SYMBOL;
+import static ie.francis.fspnew.token.Type.*;
 
 import ie.francis.fspnew.exception.SyntaxErrorException;
 import ie.francis.fspnew.node.*;
@@ -106,14 +105,38 @@ public class Parser {
         return quoteSpecialForm();
       case "lambda":
         return lambdaSpecialForm();
+      case "let":
+        return letSpecialForm();
     }
     throw new SyntaxErrorException("expected special form, something went wrong");
   }
 
+  // let_special_form : '(' let SYMBOL expr ')'
+  private Node letSpecialForm() {
+    scanner.next();
+    if (scanner.peek().getType() != SYMBOL) {
+      throw new SyntaxErrorException(
+          String.format("expecting symbol after 'let', found %s", scanner.peek()));
+    }
+    LetNode node = new LetNode(new SymbolNode(scanner.next().getValue()), expr());
+    if (scanner.peek().getType() != RPAREN) {
+      throw new SyntaxErrorException(
+          String.format(
+              "found incomplete let special form, expected ')', found: %s", scanner.peek()));
+    }
+    scanner.next();
+    return node;
+  }
+
+  // lambda_special_form : '(' lambda '(' SYMBOL* ')' expr ')'
   private Node lambdaSpecialForm() {
     scanner.next();
     LambdaNode lambdaNode = new LambdaNode();
     List<SymbolNode> parameters = new ArrayList<>();
+    if (scanner.peek().getType() != LPAREN) {
+      throw new SyntaxErrorException(
+          String.format("expecting parameters list after 'lambda', found %s", scanner.peek()));
+    }
     scanner.next();
     while (scanner.hasNext() && scanner.peek().getType() == SYMBOL) {
       Token token = scanner.peek();
@@ -123,16 +146,37 @@ public class Parser {
     scanner.next();
     lambdaNode.setParameters(parameters);
     lambdaNode.setBody(expr());
+    if (scanner.peek().getType() != RPAREN) {
+      throw new SyntaxErrorException(
+          String.format(
+              "found incomplete lambda special form, expected ')', found: %s", scanner.peek()));
+    }
     scanner.next();
     return lambdaNode;
   }
 
+  // if_special_form : '(' if expr expr expr? ')'
   private Node ifSpecialForm() {
     scanner.next();
     IfNode ifNode = new IfNode();
     ifNode.setCondition(expr());
     ifNode.setLeft(expr());
-    ifNode.setRight(expr());
+    Token token = scanner.peek();
+    switch (token.getType()) {
+      case SYMBOL:
+      case STRING:
+      case NUMBER:
+      case BOOLEAN:
+      case LPAREN:
+        ifNode.setRight(expr());
+      default:
+        break;
+    }
+    if (scanner.peek().getType() != RPAREN) {
+      throw new SyntaxErrorException(
+          String.format(
+              "found incomplete if special form, expected ')', found: %s", scanner.peek()));
+    }
     scanner.next();
     return ifNode;
   }
@@ -158,7 +202,7 @@ public class Parser {
       case "if":
       case "quote":
       case "lambda":
-      case "progn":
+      case "let":
         return true;
     }
     return false;

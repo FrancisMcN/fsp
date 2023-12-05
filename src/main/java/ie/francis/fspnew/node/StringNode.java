@@ -6,6 +6,8 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.STRING_NODE;
 
+import ie.francis.fspnew.visitor.Visitor;
+
 public class StringNode implements Node {
   private final String value;
 
@@ -16,6 +18,11 @@ public class StringNode implements Node {
   @Override
   public NodeType type() {
     return STRING_NODE;
+  }
+
+  @Override
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
   }
 
   @Override
