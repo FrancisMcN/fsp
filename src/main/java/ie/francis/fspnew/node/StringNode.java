@@ -29,4 +29,8 @@ public class StringNode implements Node {
   public String toString() {
     return String.format("(string node: %s)", value);
   }
+
+  public String getValue() {
+    return value;
+  }
 }

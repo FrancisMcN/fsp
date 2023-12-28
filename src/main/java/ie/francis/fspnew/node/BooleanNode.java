@@ -30,4 +30,8 @@ public class BooleanNode implements Node {
   public String toString() {
     return String.format("(boolean node: %b)", value);
   }
+
+  public boolean getValue() {
+    return this.value;
+  }
 }

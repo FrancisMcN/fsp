@@ -4,6 +4,7 @@
 
 package ie.francis.fspnew;
 
+import ie.francis.fspnew.repl.Repl;
 import java.io.IOException;
 
 public class Main {

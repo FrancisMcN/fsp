@@ -29,4 +29,8 @@ public class IntegerNode implements Node {
   public String toString() {
     return String.format("(integer node: %d)", value);
   }
+
+  public int getValue() {
+    return value;
+  }
 }

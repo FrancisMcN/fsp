@@ -12,7 +12,7 @@ import java.util.List;
 
 public class ListNode implements Node {
 
-  private List<Node> nodes;
+  private final List<Node> nodes;
 
   public ListNode() {
     this.nodes = new ArrayList<>();
@@ -35,5 +35,9 @@ public class ListNode implements Node {
   @Override
   public String toString() {
     return String.format("(list node: %s)", nodes);
+  }
+
+  public List<Node> getNodes() {
+    return nodes;
   }
 }

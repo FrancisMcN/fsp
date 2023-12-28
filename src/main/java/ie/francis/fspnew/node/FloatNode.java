@@ -29,4 +29,8 @@ public class FloatNode implements Node {
   public String toString() {
     return String.format("(float node: %f)", value);
   }
+
+  public float getValue() {
+    return value;
+  }
 }
