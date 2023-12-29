@@ -34,7 +34,7 @@ public class Parser {
     return exprs;
   }
 
-  // expr : SYMBOL | STRING | NUMBER | BOOLEAN | list
+  // expr : SYMBOL | STRING | NUMBER | BOOLEAN | list | TICK expr
   protected Node expr() throws SyntaxErrorException {
     Token token = scanner.peek();
     switch (token.getType()) {
@@ -64,6 +64,11 @@ public class Parser {
         }
       case LPAREN:
         return list();
+      case TICK:
+        {
+          scanner.next();
+          return new QuoteNode(expr());
+        }
       default:
         throw new SyntaxErrorException("syntax error");
     }

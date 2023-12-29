@@ -30,6 +30,11 @@ public class SymbolNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    return this;
+  }
+
+  @Override
   public String toString() {
     return String.format("(symbol node: %s)", value);
   }

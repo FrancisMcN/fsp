@@ -26,6 +26,11 @@ public class FloatNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    return this;
+  }
+
+  @Override
   public String toString() {
     return String.format("(float node: %f)", value);
   }

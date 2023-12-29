@@ -26,6 +26,11 @@ public class IntegerNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    return this;
+  }
+
+  @Override
   public String toString() {
     return String.format("(integer node: %d)", value);
   }

@@ -33,6 +33,11 @@ public class ListNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    return this;
+  }
+
+  @Override
   public String toString() {
     return String.format("(list node: %s)", nodes);
   }

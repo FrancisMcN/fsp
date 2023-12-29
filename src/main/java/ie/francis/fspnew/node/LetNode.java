@@ -37,6 +37,15 @@ public class LetNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    ListNode list = new ListNode();
+    list.addNode(new SymbolNode("let"));
+    list.addNode(symbol.quote());
+    list.addNode(value.quote());
+    return list;
+  }
+
+  @Override
   public String toString() {
     return String.format("(let node: %s %s)", symbol, value);
   }

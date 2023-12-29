@@ -27,6 +27,11 @@ public class BooleanNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    return this;
+  }
+
+  @Override
   public String toString() {
     return String.format("(boolean node: %b)", value);
   }

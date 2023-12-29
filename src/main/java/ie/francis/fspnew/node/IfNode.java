@@ -26,6 +26,10 @@ public class IfNode implements Node {
     this.condition = condition;
   }
 
+  public Node getCondition() {
+    return condition;
+  }
+
   public Node getLeft() {
     return left;
   }
@@ -50,6 +54,18 @@ public class IfNode implements Node {
   @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
+  }
+
+  @Override
+  public Node quote() {
+    ListNode list = new ListNode();
+    list.addNode(new SymbolNode("if"));
+    list.addNode(condition.quote());
+    list.addNode(left.quote());
+    if (right != null) {
+      list.addNode(right.quote());
+    }
+    return list;
   }
 
   @Override

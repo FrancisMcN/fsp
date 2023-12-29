@@ -4,6 +4,8 @@
 
 package ie.francis.fspnew.scanner;
 
+import static ie.francis.fspnew.token.Type.TICK;
+
 import ie.francis.fspnew.token.Token;
 import ie.francis.fspnew.token.Type;
 
@@ -60,6 +62,9 @@ public class Scanner {
           ptr++;
           ignoreComment();
           break;
+        case '\'':
+          ptr++;
+          return new Token(TICK, "'", lineNo);
         default:
           {
             if (Character.isDigit(c)) {

@@ -26,6 +26,11 @@ public class StringNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    return this;
+  }
+
+  @Override
   public String toString() {
     return String.format("(string node: %s)", value);
   }

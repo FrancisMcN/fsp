@@ -10,4 +10,6 @@ public interface Node {
   NodeType type();
 
   void accept(Visitor visitor);
+
+  Node quote();
 }

@@ -27,7 +27,19 @@ public class QuoteNode implements Node {
   }
 
   @Override
+  public Node quote() {
+    ListNode list = new ListNode();
+    list.addNode(new SymbolNode("quote"));
+    list.addNode(value.quote());
+    return list;
+  }
+
+  @Override
   public String toString() {
     return String.format("(quote node: %s)", value);
+  }
+
+  public Node getValue() {
+    return value;
   }
 }
