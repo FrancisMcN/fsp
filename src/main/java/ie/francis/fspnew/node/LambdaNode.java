@@ -46,6 +46,11 @@ public class LambdaNode implements Node {
   }
 
   @Override
+  public Object eval() {
+    return null;
+  }
+
+  @Override
   public Node quote() {
     ListNode list = new ListNode();
     list.addNode(new SymbolNode("lambda"));
@@ -76,7 +81,7 @@ public class LambdaNode implements Node {
   }
 
   public String descriptor() {
-    return "(" + "Ljava/lang/Object;".repeat(0) + ")Ljava/lang/Object;";
+    return "(" + "Ljava/lang/Object;".repeat(parameters.size()) + ")Ljava/lang/Object;";
   }
 
   public int arity() {

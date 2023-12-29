@@ -5,42 +5,40 @@
 package ie.francis.fspnew.visitor;
 
 import static ie.francis.fspnew.node.NodeType.LAMBDA_NODE;
-import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.fspnew.compiler.Artifact;
+import ie.francis.fspnew.generator.LambdaGenerator;
 import ie.francis.fspnew.node.*;
 import ie.francis.fspnew.repl.Environment;
 import java.util.*;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.LocalVariablesSorter;
 
 public class JavaClassGeneratorVisitor implements Visitor {
+
   private final List<Artifact> artifacts;
-  //    private final Stack<ClassWriter> classWriterStack;
+
   private MethodVisitor mv;
-  private ClassWriter cw;
-  private LocalVariablesSorter lvs;
-  private Map<String, Integer> locals;
+  private final Map<String, Integer> locals;
 
   private int quoteDepth;
 
-  private String className;
-
   private final Environment environment;
 
-  public JavaClassGeneratorVisitor(Environment environment, ClassWriter cw) {
-    this.cw = cw;
-    this.artifacts = new ArrayList<>();
-    this.environment = environment;
-    this.quoteDepth = 0;
+  public void setMv(MethodVisitor mv) {
+    this.mv = mv;
+  }
+
+  public void addLocal(String local) {
+    if (!this.locals.containsKey(local)) {
+      this.locals.put(local, this.locals.size());
+    }
   }
 
   public JavaClassGeneratorVisitor(Environment environment) {
-    this.cw = new ClassWriter(COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+    this.locals = new HashMap<>();
     this.artifacts = new ArrayList<>();
     this.environment = environment;
     this.quoteDepth = 0;
@@ -102,111 +100,34 @@ public class JavaClassGeneratorVisitor implements Visitor {
 
   @Override
   public void visit(LambdaNode node) {
-    ClassWriter originalCw = this.cw;
-    LocalVariablesSorter originalLvs = this.lvs;
-    Map<String, Integer> originalLocals = this.locals;
-    String originalClassName = this.className;
-    this.cw = new ClassWriter(COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-    this.className = node.getName();
-    cw.visit(
-        V1_5,
-        ACC_PUBLIC + ACC_MODULE,
-        className,
-        null,
-        "java/lang/Object",
-        new String[] {"ie/francis/fspnew/builtin/type/Lambda"});
 
-    int parameterCount = node.getParameters().size();
-    String descriptor = "(" + "Ljava/lang/Object;".repeat(parameterCount) + ")Ljava/lang/Object;";
-    MethodVisitor originalMv = mv;
-    //    mv = cw.visitMethod(ACC_PUBLIC, "<init>", descriptor, null, null);
-    //    mv.visitCode();
-    //    mv.visitVarInsn(ALOAD, 0);
-    //    mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-    //
-    //    for (int i = 0; i < node.getParameters().size(); i++) {
-    //      SymbolNode symbol = node.getParameters().get(i);
-    //      mv.visitVarInsn(ALOAD, 0);
-    //      mv.visitVarInsn(ALOAD, i+1);
-    //      mv.visitFieldInsn(PUTFIELD, className, symbol.getValue(), "Ljava/lang/Object;");
-    //    }
-    //
-    //    mv.visitInsn(RETURN);
-    //    mv.visitMaxs(0, 0);
-    //    mv.visitEnd();
-
-    mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
-    mv.visitCode();
-    mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-    mv.visitInsn(RETURN);
-    mv.visitMaxs(0, 0);
-    mv.visitEnd();
-
-    for (int i = 0; i < 3; i++) {
-      if (i == parameterCount) {
-        continue;
-      }
-      addUnimplementedCall(i);
+    if (quoteDepth > 0) {
+      node.quote().accept(this);
+      return;
     }
 
-    // Unimplemented variadic function, arity >= 4 requires a variadic function
-    addUnimplementedCall(4);
-
-    mv = cw.visitMethod(ACC_PUBLIC, "call", descriptor, null, null);
-    locals = new HashMap<>();
-    locals.put("this", 0);
-    for (SymbolNode symbol : node.getParameters()) {
-      locals.put(symbol.getValue(), locals.size());
-      // cw.visitField(ACC_PRIVATE, symbol.getValue(), "Ljava/lang/Object;", null, null).visitEnd();
-    }
-    mv.visitCode();
-
-    node.getBody().accept(this);
-
-    mv.visitInsn(ARETURN);
-    mv.visitMaxs(0, 0);
-    mv.visitEnd();
-    cw.visitEnd();
-    this.artifacts.add(new Artifact(node.getName(), cw.toByteArray()));
-    cw = originalCw;
-    mv = originalMv;
-    lvs = originalLvs;
-    locals = originalLocals;
-    className = originalClassName;
-
+    LambdaGenerator generator = new LambdaGenerator(node, environment);
+    generator.generate();
     if (mv != null) {
       mv.visitTypeInsn(Opcodes.NEW, node.getName());
       mv.visitInsn(DUP);
       mv.visitMethodInsn(INVOKESPECIAL, node.getName(), "<init>", "()V", false);
     }
-  }
-
-  private void addUnimplementedCall(int arity) {
-    String descriptor;
-    if (arity >= 0 && arity < 4) {
-      descriptor = "(" + "Ljava/lang/Object;".repeat(arity) + ")Ljava/lang/Object;";
-    } else {
-      descriptor = "(" + "Ljava/lang/Object;".repeat(3) + "[Ljava/lang/Object;)Ljava/lang/Object;";
-    }
-    mv = cw.visitMethod(ACC_PUBLIC, "call", descriptor, null, null);
-    mv.visitCode();
-    mv.visitTypeInsn(Opcodes.NEW, "ie/francis/fspnew/exception/NotImplementedException");
-    mv.visitInsn(DUP);
-    mv.visitLdcInsn(String.format("method with arity %d is not implemented", arity));
-    mv.visitMethodInsn(
-        INVOKESPECIAL,
-        "ie/francis/fspnew/exception/NotImplementedException",
-        "<init>",
-        "(Ljava/lang/String;)V",
-        false);
-    mv.visitInsn(ATHROW);
-    mv.visitMaxs(0, 0);
-    mv.visitEnd();
+    this.artifacts.addAll(generator.getArtifacts());
   }
 
   @Override
   public void visit(LetNode node) {
+
+    if (quoteDepth > 0) {
+      node.quote().accept(this);
+      return;
+    }
+
+    environment.put(node.getSymbol().getValue(), node.eval());
+    //      return;
+    //    }
+
     node.getValue().accept(this);
     mv.visitVarInsn(ASTORE, locals.size());
     mv.visitVarInsn(ALOAD, locals.size());
@@ -242,16 +163,9 @@ public class JavaClassGeneratorVisitor implements Visitor {
     lambda.accept(this);
 
     String owner = lambda.getName();
-    String descriptor = "(" + "Ljava/lang/Object;".repeat(nodes.size() - 1) + ")V";
-    mv.visitTypeInsn(Opcodes.NEW, owner);
-    mv.visitInsn(DUP);
-
     for (int i = 1; i < nodes.size(); i++) {
       nodes.get(i).accept(this);
     }
-
-    mv.visitMethodInsn(INVOKESPECIAL, owner, "<init>", descriptor, false);
-
     mv.visitMethodInsn(INVOKEVIRTUAL, owner, "call", lambda.descriptor(), false);
   }
 
@@ -310,13 +224,21 @@ public class JavaClassGeneratorVisitor implements Visitor {
       return;
     }
     if (locals.containsKey(name)) {
-      mv.visitVarInsn(ALOAD, 0);
-      mv.visitFieldInsn(Opcodes.GETFIELD, className, node.getValue(), "Ljava/lang/Object;");
+      mv.visitVarInsn(ALOAD, locals.get(name));
     } else if (environment.contains(name)) {
       Object value = environment.get(name);
-      if (value instanceof Node) {
-        ((Node) value).accept(this);
+      if (value instanceof Integer) {
+        mv.visitLdcInsn((Integer) value);
       }
+      //      if (value instanceof Lambda) {
+      //        mv.visitTypeInsn(Opcodes.NEW, name);
+      //        mv.visitInsn(DUP);
+      //        mv.visitMethodInsn(INVOKESPECIAL, name, "<init>", "()V", false);
+      //      }
+      //      if (value instanceof Node) {
+      //        ((Node) value).accept(this);
+
+      //      }
     }
   }
 

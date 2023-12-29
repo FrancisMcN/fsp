@@ -11,5 +11,7 @@ public interface Node {
 
   void accept(Visitor visitor);
 
+  Object eval();
+
   Node quote();
 }

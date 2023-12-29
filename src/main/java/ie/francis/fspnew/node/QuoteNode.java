@@ -6,6 +6,8 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.QUOTE_NODE;
 
+import ie.francis.fspnew.builtin.type.Cons;
+import ie.francis.fspnew.builtin.type.Symbol;
 import ie.francis.fspnew.visitor.Visitor;
 
 public class QuoteNode implements Node {
@@ -24,6 +26,14 @@ public class QuoteNode implements Node {
   @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
+  }
+
+  @Override
+  public Object eval() {
+    Cons cons = new Cons();
+    cons.setCar(new Symbol("quote"));
+    cons.setCdr(new Cons().setCar(value.eval()));
+    return null;
   }
 
   @Override

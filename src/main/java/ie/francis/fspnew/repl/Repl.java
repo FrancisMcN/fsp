@@ -36,6 +36,7 @@ public class Repl {
       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
       System.out.print("> ");
       String input = reader.readLine();
+      // String input = "'((lambda (x y z) (if false x y)) 1 2 3)";
       if (input.equalsIgnoreCase("")) {
         continue;
       }
@@ -44,10 +45,9 @@ public class Repl {
       }
 
       Compiler compiler = new Compiler(new JavaClassGeneratorVisitor(environment));
-
+      //      Compiler compiler = new Compiler(new Generator("Repl"));
       try {
         List<Node> nodes = compiler.compileToAst(input);
-        System.out.println(nodes);
 
         // Wrap in a lambda if running in REPL mode
         List<Node> tree = nodes;
@@ -73,7 +73,8 @@ public class Repl {
         Object object = ctor.newInstance();
         Lambda l = ((Lambda) object);
         l.call();
-        System.out.println(String.format(">> %s", ((Lambda) object).call()));
+        System.out.println(String.format("= %s", ((Lambda) object).call()));
+
         //        System.out.println(String.format(">> %s", c.getMethod("call").invoke(null)));
       } catch (SyntaxErrorException | TypeErrorException ex) {
         ex.printStackTrace();

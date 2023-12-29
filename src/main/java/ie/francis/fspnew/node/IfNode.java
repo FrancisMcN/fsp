@@ -57,6 +57,17 @@ public class IfNode implements Node {
   }
 
   @Override
+  public Object eval() {
+    Object cond = condition.eval();
+    if ((Boolean) cond) {
+      return left.eval();
+    } else if (right != null) {
+      return right.eval();
+    }
+    return null;
+  }
+
+  @Override
   public Node quote() {
     ListNode list = new ListNode();
     list.addNode(new SymbolNode("if"));

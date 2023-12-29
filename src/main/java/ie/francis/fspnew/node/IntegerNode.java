@@ -26,6 +26,11 @@ public class IntegerNode implements Node {
   }
 
   @Override
+  public Object eval() {
+    return this.value;
+  }
+
+  @Override
   public Node quote() {
     return this;
   }

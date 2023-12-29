@@ -14,15 +14,15 @@ import java.util.List;
 
 public class Compiler {
 
-  //  private final Generator generator;
+  //    private final Generator generator;
   private final JavaClassGeneratorVisitor visitor;
 
   public Compiler(JavaClassGeneratorVisitor visitor) {
     this.visitor = visitor;
   }
-  //  public Compiler(Generator generator) {
-  //    this.generator = generator;
-  //  }
+  //    public Compiler(Generator generator) {
+  //      this.generator = generator;
+  //    }
 
   public List<Artifact> compile(String input) {
 
@@ -41,6 +41,7 @@ public class Compiler {
     analyser.analyse(node);
     node.accept(visitor);
     return visitor.getArtifacts();
+    //    return generator.generate(node);
   }
 
   public List<Artifact> compileAst(List<Node> nodes) {
@@ -52,5 +53,6 @@ public class Compiler {
       node.accept(visitor);
     }
     return visitor.getArtifacts();
+    //    return generator.generate(nodes);
   }
 }

@@ -37,6 +37,11 @@ public class LetNode implements Node {
   }
 
   @Override
+  public Object eval() {
+    return this.value.eval();
+  }
+
+  @Override
   public Node quote() {
     ListNode list = new ListNode();
     list.addNode(new SymbolNode("let"));

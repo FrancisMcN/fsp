@@ -6,6 +6,7 @@ package ie.francis.fspnew.node;
 
 import static ie.francis.fspnew.node.NodeType.SYMBOL_NODE;
 
+import ie.francis.fspnew.builtin.type.Symbol;
 import ie.francis.fspnew.visitor.Visitor;
 
 public class SymbolNode implements Node {
@@ -27,6 +28,11 @@ public class SymbolNode implements Node {
   @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
+  }
+
+  @Override
+  public Object eval() {
+    return new Symbol(this.value);
   }
 
   @Override
