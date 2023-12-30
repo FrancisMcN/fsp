@@ -8,10 +8,9 @@ import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.lisp.exception.InvalidConsException;
-import ie.francis.lisp.function.Lambda;
 import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Symbol;
-import java.util.Random;
+import java.util.*;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -24,22 +23,69 @@ public class Compiler {
   private int quoteDepth;
 
   private final String className;
+  private final List<Artifact> artifacts;
+  private final Map<String, Integer> locals;
 
   public Compiler() {
     quoteDepth = 0;
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
+    artifacts = new ArrayList<>();
+    locals = new HashMap<>();
+    locals.put("this", 0);
   }
 
-  public Artifact compile(Object object) {
+  public void compile(Object object) {
 
     // Pre class-generation
     start();
+    // Add code to call() method with arity 0
+    mv = cw.visitMethod(ACC_PUBLIC, "call", "()Ljava/lang/Object;", null, null);
+    mv.visitCode();
 
     _compile(object);
 
     // Post class-generation
     finish();
-    return new Artifact(className, cw.toByteArray());
+
+    this.artifacts.add(new Artifact(className, cw.toByteArray()));
+  }
+
+  public void compileLambda(Object object) {
+
+    // Pre class-generation
+    start();
+
+    // Record local variables and determine function arity
+    Cons cons = ((Cons) (((Cons) object).getCdr().getCar()));
+    while (cons != null) {
+      locals.put(cons.getCar().toString(), locals.size());
+      cons = cons.getCdr();
+    }
+
+    int arity = locals.size() - 1;
+
+    // Add code to call method with required arity
+    mv =
+        cw.visitMethod(
+            ACC_PUBLIC,
+            "call",
+            "(" + "Ljava/lang/Object;".repeat(arity) + ")Ljava/lang/Object;",
+            null,
+            null);
+    mv.visitCode();
+
+    Object body = ((Cons) object).getCdr().getCdr().getCar();
+
+    _compile(body);
+
+    // Post class-generation
+    finish();
+
+    this.artifacts.add(new Artifact(className, cw.toByteArray()));
+  }
+
+  public List<Artifact> getArtifacts() {
+    return artifacts;
   }
 
   public void _compile(Object object) {
@@ -84,9 +130,6 @@ public class Compiler {
     mv.visitInsn(RETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();
-
-    mv = cw.visitMethod(ACC_PUBLIC, "call", "()Ljava/lang/Object;", null, null);
-    mv.visitCode();
   }
 
   private void compileNumber(Integer integer) {
@@ -117,9 +160,15 @@ public class Compiler {
       mv.visitLdcInsn(symbol.getValue());
       mv.visitMethodInsn(
           INVOKESPECIAL, "ie/francis/lisp/type/Symbol", "<init>", "(Ljava/lang/String;)V", false);
-    } else {
-      mv.visitLdcInsn("demo symbol since symbol resolution doesn't work");
+      return;
     }
+
+    if (locals.containsKey(symbol.getValue())) {
+      mv.visitVarInsn(ALOAD, locals.get(symbol.getValue()));
+      return;
+    }
+
+    mv.visitLdcInsn("demo symbol since symbol resolution doesn't work");
   }
 
   private void compileCons(Cons cons) {
@@ -133,12 +182,28 @@ public class Compiler {
     if (isSpecialForm(cons)) {
       compileSpecialForm(cons);
       return;
-    } else if (first instanceof Lambda) {
-      compileLambda(cons);
-      compileLambdaCall(cons.getCdr());
-      return;
+    }
+
+    if (first instanceof Cons) {
+      Object car = ((Cons) first).getCar();
+      if (car instanceof Symbol && ((Symbol) car).getValue().equals("lambda")) {
+        compileSpecialForm((Cons) first);
+        String lambda = artifacts.get(artifacts.size() - 1).getName();
+        compileLambdaCall(lambda, cons.getCdr());
+        return;
+      }
     }
     throw new InvalidConsException("expected a function in first cons cell");
+  }
+
+  private void compileLambdaCall(String lambda, Cons cons) {
+
+    String descriptor = "(" + "Ljava/lang/Object;".repeat(cons.size()) + ")Ljava/lang/Object;";
+    while (cons != null) {
+      _compile(cons.getCar());
+      cons = cons.getCdr();
+    }
+    mv.visitMethodInsn(INVOKEVIRTUAL, lambda, "call", descriptor, false);
   }
 
   private void compileConsWithoutEvaluating(Cons cons) {
@@ -174,8 +239,16 @@ public class Compiler {
     Symbol symbol = (Symbol) cons.getCar();
     switch (symbol.getValue()) {
       case "lambda":
-        compileLambdaSpecialForm(cons);
-        break;
+        {
+          Compiler compiler = new Compiler();
+          compiler.compileLambda(cons);
+          String lambda = compiler.artifacts.get(compiler.artifacts.size() - 1).getName();
+          mv.visitTypeInsn(Opcodes.NEW, lambda);
+          mv.visitInsn(DUP);
+          mv.visitMethodInsn(INVOKESPECIAL, lambda, "<init>", "()V", false);
+          this.artifacts.addAll(compiler.artifacts);
+          break;
+        }
       case "quote":
         compileQuoteSpecialForm(cons);
         break;
@@ -197,12 +270,6 @@ public class Compiler {
     _compile(cons.getCdr().getCar());
     quoteDepth--;
   }
-
-  private void compileLambdaSpecialForm(Cons cons) {}
-
-  private void compileLambdaCall(Cons cdr) {}
-
-  private void compileLambda(Cons cons) {}
 
   private boolean isSpecialForm(Cons cons) {
     Object first = cons.getCar();

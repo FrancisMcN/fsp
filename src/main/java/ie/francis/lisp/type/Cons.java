@@ -34,6 +34,16 @@ public class Cons {
     return cdr;
   }
 
+  public int size() {
+    int size = 1;
+    Cons cons = getCdr();
+    while (cons != null) {
+      size++;
+      cons = cons.getCdr();
+    }
+    return size;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
