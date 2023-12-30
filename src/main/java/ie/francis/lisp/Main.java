@@ -4,49 +4,40 @@
 
 package ie.francis.lisp;
 
-import ie.francis.lisp.compiler.Artifact;
-import ie.francis.lisp.function.Compile;
+import ie.francis.lisp.function.Eval;
+import ie.francis.lisp.function.Print;
 import ie.francis.lisp.function.Read;
-import ie.francis.lisp.loader.LispClassLoader;
-import ie.francis.lisp.type.Lambda;
-import java.io.FileOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
+import java.io.InputStreamReader;
 
 public class Main {
-  public static void main(String[] args)
-      throws ClassNotFoundException,
-          NoSuchMethodException,
-          InvocationTargetException,
-          InstantiationException,
-          IllegalAccessException {
+  public static void main(String[] args) {
 
-    Read reader = new Read();
-    Object object = reader.call("((lambda (x y) x) \"hello world\" 2)");
-    //     Object object = reader.call("(lambda (x y) 123)");
-    //    Object object = reader.call("(quote (1 2 3 4))");
+    String code = "((lambda (x  y) ()) 1 2)";
 
-    Compile compiler = new Compile();
-    List<Artifact> artifacts = (List<Artifact>) compiler.call(object);
+    while (true) {
+      BufferedReader buffReader = new BufferedReader(new InputStreamReader(System.in));
+      System.out.print("> ");
+      String input;
+      try {
+        input = buffReader.readLine();
 
-    LispClassLoader lispClassLoader = new LispClassLoader();
-    for (Artifact artifact : artifacts) {
-      lispClassLoader.defineClass(artifact.getName(), artifact.getData());
-      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
-        fos.write(artifact.getData());
-      } catch (IOException ex) {
-        throw new RuntimeException(ex);
+        if (input.equalsIgnoreCase("")) {
+          continue;
+        }
+        if (input.equalsIgnoreCase("exit")) {
+          break;
+        }
+        Read reader = new Read();
+        Eval eval = new Eval();
+
+        do {
+          new Print().call(eval.call(reader.call(input)));
+        } while (!reader.isComplete());
+
+      } catch (IOException ignored) {
       }
     }
-
-    Artifact artifactToRun = artifacts.get(artifacts.size() - 1);
-    Class<?> c = lispClassLoader.loadClass(artifactToRun.getName());
-    Constructor<?> ctor = c.getConstructor();
-    Object lambda = ctor.newInstance();
-    Lambda l = ((Lambda) lambda);
-
-    System.out.println(String.format("= %s", l.call()));
   }
 }

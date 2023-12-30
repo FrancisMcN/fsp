@@ -14,19 +14,30 @@ import ie.francis.lisp.type.Symbol;
 public class Parser {
 
   private final Scanner scanner;
+  private boolean isComplete;
 
   public Parser(Scanner scanner) {
     this.scanner = scanner;
+    this.isComplete = false;
   }
 
-  // expr : SYMBOL | STRING | BOOLEAN | NUMBER | list
+  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | list
   // list : '(' expr* ')'
   public Object parse() {
-    return expr();
+    Object expr = expr();
+    if (!scanner.hasNext()) {
+      isComplete = true;
+    }
+    return expr;
   }
 
-  public Object expr() {
+  public boolean isComplete() {
+    return isComplete;
+  }
+
+  private Object expr() {
     Token token = scanner.peek();
+
     switch (token.getType()) {
       case SYMBOL:
         scanner.next();
@@ -52,7 +63,7 @@ public class Parser {
     throw new SyntaxErrorException("syntax error");
   }
 
-  public Object list() {
+  private Object list() {
     Cons cons = new Cons();
     Cons prev = cons;
     Cons head = cons;
@@ -60,6 +71,13 @@ public class Parser {
       throw new SyntaxErrorException("syntax error - expected '('");
     }
     scanner.next();
+
+    // Return null for empty list
+    if (scanner.peek().getType() == Type.RPAREN) {
+      scanner.next();
+      return null;
+    }
+
     while (scanner.peek().getType() != Type.RPAREN) {
       prev = cons;
       Cons next = new Cons();

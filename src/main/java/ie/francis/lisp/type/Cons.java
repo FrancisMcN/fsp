@@ -50,7 +50,11 @@ public class Cons {
     Cons temp = this;
     sb.append("(");
     while (temp != null) {
-      sb.append(temp.getCar());
+      if (temp.getCar() == null) {
+        sb.append("nil");
+      } else {
+        sb.append(temp.getCar());
+      }
       temp = temp.getCdr();
       if (temp != null) {
         sb.append(" ");

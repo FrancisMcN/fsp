@@ -102,6 +102,8 @@ public class Compiler {
       compileNumber((Float) object);
     } else if (object instanceof Cons) {
       compileCons((Cons) object);
+    } else if (object == null) {
+      mv.visitInsn(ACONST_NULL);
     }
   }
 

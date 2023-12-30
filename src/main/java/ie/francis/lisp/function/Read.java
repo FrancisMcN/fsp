@@ -10,6 +10,10 @@ import ie.francis.lisp.scanner.Scanner;
 import ie.francis.lisp.type.Lambda;
 
 public class Read implements Lambda {
+
+  private Scanner scanner;
+  private Parser parser;
+
   @Override
   public Object call() {
     throw new NotImplementedException("method not implemented");
@@ -18,8 +22,15 @@ public class Read implements Lambda {
   @Override
   public Object call(Object arg) {
     String input = (String) arg;
-    Scanner scanner = new Scanner(input);
-    Parser parser = new Parser(scanner);
+    if (scanner == null || parser == null) {
+      scanner = new Scanner(input);
+      parser = new Parser(scanner);
+    }
+
     return parser.parse();
+  }
+
+  public boolean isComplete() {
+    return parser.isComplete();
   }
 }
