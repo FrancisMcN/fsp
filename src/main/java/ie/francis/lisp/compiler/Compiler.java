@@ -36,10 +36,10 @@ public class Compiler {
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
     artifacts = new ArrayList<>();
     locals = new LocalTable();
-    locals.add("this");
+    locals.add("this", null);
   }
 
-  public void compile(Object object) {
+  public Metadata compile(Object object) {
 
     // Pre class-generation
     start();
@@ -47,15 +47,17 @@ public class Compiler {
     mv = cw.visitMethod(ACC_PUBLIC, "call", "()Ljava/lang/Object;", null, null);
     mv.visitCode();
 
-    _compile(object);
+    Metadata meta = _compile(object);
 
     // Post class-generation
     finish();
 
     this.artifacts.add(new Artifact(className, cw.toByteArray()));
+
+    return meta;
   }
 
-  public void compileLambda(Object object) {
+  public Metadata compileLambda(Object object) {
 
     // Pre class-generation
     start();
@@ -63,7 +65,7 @@ public class Compiler {
     // Record local variables and determine function arity
     Cons cons = ((Cons) (((Cons) object).getCdr().getCar()));
     while (cons != null) {
-      locals.add(cons.getCar().toString());
+      locals.add(cons.getCar().toString(), null);
       cons = cons.getCdr();
     }
 
@@ -89,29 +91,32 @@ public class Compiler {
     finish();
 
     this.artifacts.add(new Artifact(className, cw.toByteArray()));
+
+    return new Metadata(Metadata.Type.LAMBDA, className);
   }
 
   public List<Artifact> getArtifacts() {
     return artifacts;
   }
 
-  public void _compile(Object object) {
-
+  public Metadata _compile(Object object) {
+    Metadata meta = new Metadata(Metadata.Type.NIL, "nil");
     if (object instanceof Symbol) {
-      compileSymbol((Symbol) object);
+      meta = compileSymbol((Symbol) object);
     } else if (object instanceof String) {
-      compileString((String) object);
+      meta = compileString((String) object);
     } else if (object instanceof Boolean) {
-      compileBoolean((Boolean) object);
+      meta = compileBoolean((Boolean) object);
     } else if (object instanceof Integer) {
-      compileNumber((Integer) object);
+      meta = compileNumber((Integer) object);
     } else if (object instanceof Float) {
-      compileNumber((Float) object);
+      meta = compileNumber((Float) object);
     } else if (object instanceof Cons) {
-      compileCons((Cons) object);
+      meta = compileCons((Cons) object);
     } else if (object == null) {
       mv.visitInsn(ACONST_NULL);
     }
+    return meta;
   }
 
   private void finish() {
@@ -144,32 +149,37 @@ public class Compiler {
     mv.visitEnd();
   }
 
-  private void compileNumber(Integer integer) {
+  private Metadata compileNumber(Integer integer) {
     mv.visitLdcInsn(integer);
     stackSize++;
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+    return new Metadata(Metadata.Type.INTEGER, integer.toString());
   }
 
-  private void compileNumber(Float floating) {
+  private Metadata compileNumber(Float floating) {
     mv.visitLdcInsn(floating);
     stackSize++;
     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
+    return new Metadata(Metadata.Type.FLOAT, floating.toString());
   }
 
-  private void compileBoolean(Boolean bool) {
+  private Metadata compileBoolean(Boolean bool) {
     mv.visitLdcInsn(bool);
     stackSize++;
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
+    return new Metadata(Metadata.Type.BOOLEAN, bool.toString());
   }
 
-  private void compileString(String string) {
+  private Metadata compileString(String string) {
     mv.visitLdcInsn(string);
     stackSize++;
+    return new Metadata(Metadata.Type.STRING, string);
   }
 
-  private void compileSymbol(Symbol symbol) {
+  private Metadata compileSymbol(Symbol symbol) {
+    Metadata meta = new Metadata(Metadata.Type.SYMBOL, symbol.getValue());
     stackSize++;
     if (isQuoted()) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
@@ -177,28 +187,28 @@ public class Compiler {
       mv.visitLdcInsn(symbol.getValue());
       mv.visitMethodInsn(
           INVOKESPECIAL, "ie/francis/lisp/type/Symbol", "<init>", "(Ljava/lang/String;)V", false);
-      return;
+      return meta;
     }
 
     if (locals.contains(symbol.getValue())) {
-      mv.visitVarInsn(ALOAD, locals.get(symbol.getValue()));
-      return;
+      mv.visitVarInsn(ALOAD, locals.get(symbol.getValue()).getLocalId());
+      return meta;
     }
 
     mv.visitLdcInsn("demo symbol since symbol resolution doesn't work");
+    return meta;
   }
 
-  private void compileCons(Cons cons) {
-
+  private Metadata compileCons(Cons cons) {
+    Metadata meta = new Metadata(Metadata.Type.CONS, cons.toString());
     if (isQuoted()) {
       compileConsWithoutEvaluating(cons);
-      return;
+      return meta;
     }
 
     Object first = cons.getCar();
     if (isSpecialForm(cons)) {
-      compileSpecialForm(cons);
-      return;
+      return compileSpecialForm(cons);
     }
 
     if (first instanceof Cons) {
@@ -207,14 +217,25 @@ public class Compiler {
         compileSpecialForm((Cons) first);
         String lambda = artifacts.get(artifacts.size() - 1).getName();
         compileLambdaCall(lambda, cons.getCdr());
-        return;
+        return meta;
+      }
+    }
+    if (first instanceof Symbol) {
+      Symbol symbol = (Symbol) first;
+      // Lookup local vars for lambda
+      LocalTable.Local local = locals.get(symbol.getValue());
+      Metadata localMetadata = local.getMetadata();
+      if (localMetadata.getType() == Metadata.Type.LAMBDA) {
+        String lambdaName = localMetadata.getValue();
+        mv.visitVarInsn(ALOAD, local.getLocalId());
+        compileLambdaCall(lambdaName, cons.getCdr());
+        return localMetadata;
       }
     }
     throw new InvalidConsException("expected a function in first cons cell");
   }
 
   private void compileLambdaCall(String lambda, Cons cons) {
-
     String descriptor = "(" + "Ljava/lang/Object;".repeat(cons.size()) + ")Ljava/lang/Object;";
     stackSize += cons.size();
     while (cons != null) {
@@ -259,13 +280,14 @@ public class Compiler {
     }
   }
 
-  private void compileSpecialForm(Cons cons) {
+  private Metadata compileSpecialForm(Cons cons) {
+    Metadata meta = new Metadata(Metadata.Type.NIL, "nil");
     Symbol symbol = (Symbol) cons.getCar();
     switch (symbol.getValue()) {
       case "lambda":
         {
           Compiler compiler = new Compiler();
-          compiler.compileLambda(cons);
+          meta = compiler.compileLambda(cons);
           String lambda = compiler.artifacts.get(compiler.artifacts.size() - 1).getName();
           mv.visitTypeInsn(Opcodes.NEW, lambda);
           mv.visitInsn(DUP);
@@ -284,6 +306,7 @@ public class Compiler {
         compileLetSpecialForm(cons);
         break;
     }
+    return meta;
   }
 
   // (let ([<a> <b>]+) form*)
@@ -297,9 +320,9 @@ public class Compiler {
     while (assignments != null) {
       Symbol symbol = (Symbol) assignments.getCar();
       Object value = assignments.getCdr().getCar();
-      _compile(value);
-      locals.add(symbol.getValue());
-      mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()));
+      Metadata metadata = _compile(value);
+      locals.add(symbol.getValue(), metadata);
+      mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()).getLocalId());
       stackSize--;
       // Move to next assignment if there is one
       assignments = assignments.getCdr().getCdr();
