@@ -24,11 +24,14 @@ public class Compiler {
 
   private final String className;
   private final List<Artifact> artifacts;
-  //  private final Stack<Map<String, Integer>> locals;
 
   private final LocalTable locals;
 
   private int stackSize;
+
+  // Just a temporary hack to be able to call builtin functions,
+  // will be replaced when non-local variables are supported
+  private final Map<String, String> builtins;
 
   public Compiler() {
     quoteDepth = 0;
@@ -37,6 +40,15 @@ public class Compiler {
     artifacts = new ArrayList<>();
     locals = new LocalTable();
     locals.add("this", null);
+
+    builtins = new HashMap<>();
+    builtins.put("car", "ie/francis/lisp/function/Car");
+    builtins.put("cdr", "ie/francis/lisp/function/Cdr");
+    builtins.put("compile", "ie/francis/lisp/function/Compile");
+    builtins.put("eval", "ie/francis/lisp/function/Eval");
+    builtins.put("print", "ie/francis/lisp/function/Print");
+    builtins.put("read", "ie/francis/lisp/function/Read");
+    builtins.put("type", "ie/francis/lisp/function/Type");
   }
 
   public Metadata compile(Object object) {
@@ -195,6 +207,14 @@ public class Compiler {
       return meta;
     }
 
+    if (builtins.containsKey(symbol.getValue())) {
+      String builtin = builtins.get(symbol.getValue());
+      mv.visitTypeInsn(Opcodes.NEW, builtin);
+      mv.visitInsn(DUP);
+      mv.visitMethodInsn(INVOKESPECIAL, builtin, "<init>", "()V", false);
+      return meta;
+    }
+
     mv.visitLdcInsn("demo symbol since symbol resolution doesn't work");
     return meta;
   }
@@ -223,15 +243,29 @@ public class Compiler {
     if (first instanceof Symbol) {
       Symbol symbol = (Symbol) first;
       // Lookup local vars for lambda
-      LocalTable.Local local = locals.get(symbol.getValue());
-      Metadata localMetadata = local.getMetadata();
-      if (localMetadata.getType() == Metadata.Type.LAMBDA) {
-        String lambdaName = localMetadata.getValue();
-        mv.visitVarInsn(ALOAD, local.getLocalId());
-        compileLambdaCall(lambdaName, cons.getCdr());
-        return localMetadata;
+      if (locals.contains(symbol.getValue())) {
+        LocalTable.Local local = locals.get(symbol.getValue());
+        Metadata localMetadata = local.getMetadata();
+        if (localMetadata.getType() == Metadata.Type.LAMBDA) {
+          String lambdaName = localMetadata.getValue();
+          mv.visitVarInsn(ALOAD, local.getLocalId());
+          compileLambdaCall(lambdaName, cons.getCdr());
+          return localMetadata;
+        }
       }
     }
+
+    // Hack to support builtins until non-local variables are supported
+    if (first instanceof Symbol && builtins.containsKey(((Symbol) first).getValue())) {
+      Symbol symbol = (Symbol) first;
+      String builtin = builtins.get(symbol.getValue());
+      mv.visitTypeInsn(Opcodes.NEW, builtin);
+      mv.visitInsn(DUP);
+      mv.visitMethodInsn(INVOKESPECIAL, builtin, "<init>", "()V", false);
+      compileLambdaCall(builtin, cons.getCdr());
+      return meta;
+    }
+
     throw new InvalidConsException("expected a function in first cons cell");
   }
 
