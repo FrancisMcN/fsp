@@ -24,14 +24,19 @@ public class Compiler {
 
   private final String className;
   private final List<Artifact> artifacts;
-  private final Map<String, Integer> locals;
+  //  private final Stack<Map<String, Integer>> locals;
+
+  private final LocalTable locals;
+
+  private int stackSize;
 
   public Compiler() {
     quoteDepth = 0;
+    stackSize = 0;
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
     artifacts = new ArrayList<>();
-    locals = new HashMap<>();
-    locals.put("this", 0);
+    locals = new LocalTable();
+    locals.add("this");
   }
 
   public void compile(Object object) {
@@ -58,7 +63,7 @@ public class Compiler {
     // Record local variables and determine function arity
     Cons cons = ((Cons) (((Cons) object).getCdr().getCar()));
     while (cons != null) {
-      locals.put(cons.getCar().toString(), locals.size());
+      locals.add(cons.getCar().toString());
       cons = cons.getCdr();
     }
 
@@ -74,9 +79,11 @@ public class Compiler {
             null);
     mv.visitCode();
 
-    Object body = ((Cons) object).getCdr().getCdr().getCar();
-
-    _compile(body);
+    Cons body = ((Cons) object).getCdr().getCdr();
+    while (body != null) {
+      _compile(body.getCar());
+      body = body.getCdr();
+    }
 
     // Post class-generation
     finish();
@@ -108,6 +115,9 @@ public class Compiler {
   }
 
   private void finish() {
+    if (stackSize == 0) {
+      mv.visitInsn(ACONST_NULL);
+    }
     mv.visitInsn(ARETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();
@@ -136,26 +146,31 @@ public class Compiler {
 
   private void compileNumber(Integer integer) {
     mv.visitLdcInsn(integer);
+    stackSize++;
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
   }
 
   private void compileNumber(Float floating) {
     mv.visitLdcInsn(floating);
+    stackSize++;
     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
   }
 
   private void compileBoolean(Boolean bool) {
     mv.visitLdcInsn(bool);
+    stackSize++;
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
   }
 
   private void compileString(String string) {
     mv.visitLdcInsn(string);
+    stackSize++;
   }
 
   private void compileSymbol(Symbol symbol) {
+    stackSize++;
     if (isQuoted()) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
       mv.visitInsn(DUP);
@@ -165,7 +180,7 @@ public class Compiler {
       return;
     }
 
-    if (locals.containsKey(symbol.getValue())) {
+    if (locals.contains(symbol.getValue())) {
       mv.visitVarInsn(ALOAD, locals.get(symbol.getValue()));
       return;
     }
@@ -201,11 +216,14 @@ public class Compiler {
   private void compileLambdaCall(String lambda, Cons cons) {
 
     String descriptor = "(" + "Ljava/lang/Object;".repeat(cons.size()) + ")Ljava/lang/Object;";
+    stackSize += cons.size();
     while (cons != null) {
       _compile(cons.getCar());
       cons = cons.getCdr();
     }
+    stackSize--;
     mv.visitMethodInsn(INVOKEVIRTUAL, lambda, "call", descriptor, false);
+    stackSize++;
   }
 
   private void compileConsWithoutEvaluating(Cons cons) {
@@ -216,23 +234,27 @@ public class Compiler {
       mv.visitInsn(DUP);
       mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/type/Cons", "<init>", "()V", false);
       _compile(cons.getCar());
+      stackSize--;
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
           "ie/francis/lisp/type/Cons",
           "setCar",
           "(Ljava/lang/Object;)Lie/francis/lisp/type/Cons;",
           false);
+      stackSize++;
       cons = cons.getCdr();
     }
 
     cons = head.getCdr();
     while (cons != null) {
+      stackSize--;
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
           "ie/francis/lisp/type/Cons",
           "setCdr",
           "(Lie/francis/lisp/type/Cons;)Lie/francis/lisp/type/Cons;",
           false);
+      stackSize++;
       cons = cons.getCdr();
     }
   }
@@ -249,6 +271,7 @@ public class Compiler {
           mv.visitInsn(DUP);
           mv.visitMethodInsn(INVOKESPECIAL, lambda, "<init>", "()V", false);
           this.artifacts.addAll(compiler.artifacts);
+          stackSize++;
           break;
         }
       case "quote":
@@ -263,7 +286,34 @@ public class Compiler {
     }
   }
 
-  private void compileLetSpecialForm(Cons cons) {}
+  // (let ([<a> <b>]+) form*)
+  private void compileLetSpecialForm(Cons cons) {
+
+    // Create new scope for let form
+    locals.pushScope();
+
+    // Compile each symbol:assignment pair
+    Cons assignments = (Cons) cons.getCdr().getCar();
+    while (assignments != null) {
+      Symbol symbol = (Symbol) assignments.getCar();
+      Object value = assignments.getCdr().getCar();
+      _compile(value);
+      locals.add(symbol.getValue());
+      mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()));
+      stackSize--;
+      // Move to next assignment if there is one
+      assignments = assignments.getCdr().getCdr();
+    }
+
+    // Compile body of let statement if exists
+    Cons letBody = cons.getCdr().getCdr();
+    while (letBody != null) {
+      _compile(letBody.getCar());
+      letBody = letBody.getCdr();
+    }
+
+    locals.popScope();
+  }
 
   private void compileIfSpecialForm(Cons cons) {}
 
