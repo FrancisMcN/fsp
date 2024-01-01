@@ -10,11 +10,25 @@ import ie.francis.lisp.function.Read;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Main {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
 
     String code = "((lambda (x  y) ()) 1 2)";
+
+    if (args.length > 0) {
+      String filename = args[0];
+      String input = Files.readString(Path.of(filename));
+      Read reader = new Read();
+      Eval eval = new Eval();
+
+      do {
+        new Print().call(eval.call(reader.call(input)));
+      } while (!reader.isComplete());
+      return;
+    }
 
     while (true) {
       BufferedReader buffReader = new BufferedReader(new InputStreamReader(System.in));
