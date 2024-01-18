@@ -19,5 +19,7 @@ jobs:
         uses: gradle/gradle-build-action@749f47bda3e44aa060e82d7b3ef7e40d953bd629
         with:
           arguments: build
-          path:
-            build/libs/*.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: build/libs/
