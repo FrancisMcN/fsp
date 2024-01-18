@@ -30,6 +30,7 @@ public class Main {
       return;
     }
 
+    System.out.printf("Lisp %s%n", Version.VERSION_STRING);
     while (true) {
       BufferedReader buffReader = new BufferedReader(new InputStreamReader(System.in));
       System.out.print("> ");

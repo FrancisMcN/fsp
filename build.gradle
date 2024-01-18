@@ -1,10 +1,14 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+import java.text.SimpleDateFormat
+
 plugins {
     id 'java'
     id 'com.diffplug.spotless' version '6.18.0'
 }
 
 group 'ie.francis'
-version '1.0-SNAPSHOT'
+version '0.0.1-alpha'
 
 repositories {
     mavenCentral()
@@ -33,6 +37,28 @@ jar {
     }
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+compileJava {
+    doFirst {
+        File f = new File("${project.layout.buildDirectory.get()}/generated-src/main/java/ie/francis/lisp/Version.java")
+        f.text = f.text.replace("@VERSION_STRING@", "$version (${new SimpleDateFormat("dd MMM yyyy, HH:mm:ss").format(new Date())})")
+    }
+    doFirst {
+        copy {
+            from "src/main/java/ie/francis/lisp/Version.java.tmpl"
+            into "${project.layout.buildDirectory.get()}/generated-src/main/java/ie/francis/lisp"
+            rename("Version.java.tmpl", "Version.java")
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', 'build/generated-src/main/java']
+        }
     }
 }
 
