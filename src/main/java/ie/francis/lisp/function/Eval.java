@@ -53,4 +53,9 @@ public class Eval implements Lambda {
       throw new RuntimeException(e);
     }
   }
+
+  @Override
+  public Object call(Object[] args) {
+    throw new NotImplementedException("method not implemented");
+  }
 }

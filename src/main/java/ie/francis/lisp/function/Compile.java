@@ -20,4 +20,9 @@ public class Compile implements Lambda {
     compiler.compile(arg);
     return compiler.getArtifacts();
   }
+
+  @Override
+  public Object call(Object[] args) {
+    throw new NotImplementedException("method not implemented");
+  }
 }

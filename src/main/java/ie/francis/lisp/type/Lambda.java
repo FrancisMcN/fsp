@@ -8,4 +8,6 @@ public interface Lambda {
   Object call();
 
   Object call(Object arg);
+
+  Object call(Object[] args);
 }

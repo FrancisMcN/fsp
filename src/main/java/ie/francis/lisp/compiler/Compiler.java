@@ -9,6 +9,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
+import ie.francis.lisp.function.*;
 import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Lambda;
 import ie.francis.lisp.type.Symbol;
@@ -31,10 +32,6 @@ public class Compiler {
 
   private int stackSize;
 
-  // Just a temporary hack to be able to call builtin functions,
-  // will be replaced when non-local variables are supported
-  private final Map<String, String> builtins;
-
   public Compiler() {
     quoteDepth = 0;
     stackSize = 0;
@@ -43,14 +40,15 @@ public class Compiler {
     locals = new LocalTable();
     locals.add("this", null);
 
-    builtins = new HashMap<>();
-    builtins.put("car", "ie/francis/lisp/function/Car");
-    builtins.put("cdr", "ie/francis/lisp/function/Cdr");
-    builtins.put("compile", "ie/francis/lisp/function/Compile");
-    builtins.put("eval", "ie/francis/lisp/function/Eval");
-    builtins.put("print", "ie/francis/lisp/function/Print");
-    builtins.put("read", "ie/francis/lisp/function/Read");
-    builtins.put("type", "ie/francis/lisp/function/Type");
+    Environment.put(new Symbol("car"), new Car());
+    Environment.put(new Symbol("cdr"), new Cdr());
+    Environment.put(new Symbol("compile"), new Compile());
+    Environment.put(new Symbol("eval"), new Eval());
+    Environment.put(new Symbol("print"), new Print());
+    Environment.put(new Symbol("read"), new Read());
+    Environment.put(new Symbol("type"), new Type());
+    Environment.put(new Symbol("+"), new Plus());
+    Environment.put(new Symbol("-"), new Minus());
   }
 
   public Metadata compile(Object object) {
@@ -224,14 +222,6 @@ public class Compiler {
       return meta;
     }
 
-    if (builtins.containsKey(symbol.getValue())) {
-      String builtin = builtins.get(symbol.getValue());
-      mv.visitTypeInsn(Opcodes.NEW, builtin);
-      mv.visitInsn(DUP);
-      mv.visitMethodInsn(INVOKESPECIAL, builtin, "<init>", "()V", false);
-      return meta;
-    }
-
     mv.visitLdcInsn("demo symbol since symbol resolution doesn't work");
     return meta;
   }
@@ -295,7 +285,7 @@ public class Compiler {
           //          mv.visitInsn(DUP);
           //          mv.visitMethodInsn(INVOKESPECIAL, lambda.getClass().getName(), "<init>",
           // "()V", false);
-          compileLambdaCall(lambda.getClass().getName(), cons.getCdr());
+          compileLambdaCall(lambda.getClass().getName().replace(".", "/"), cons.getCdr());
           return meta;
         }
         //        LocalTable.Local local = locals.get(symbol.getValue());
@@ -309,17 +299,6 @@ public class Compiler {
       }
     }
 
-    // Hack to support builtins until non-local variables are supported
-    if (first instanceof Symbol && builtins.containsKey(((Symbol) first).getValue())) {
-      Symbol symbol = (Symbol) first;
-      String builtin = builtins.get(symbol.getValue());
-      mv.visitTypeInsn(Opcodes.NEW, builtin);
-      mv.visitInsn(DUP);
-      mv.visitMethodInsn(INVOKESPECIAL, builtin, "<init>", "()V", false);
-      compileLambdaCall(builtin, cons.getCdr());
-      return meta;
-    }
-
     throw new InvalidConsException("expected a function in first cons cell");
   }
 
@@ -329,11 +308,53 @@ public class Compiler {
     if (cons != null) {
       size = cons.size();
     }
+    if (size > 1) {
+      compileVariadicLambdaCall(lambda, cons);
+    } else {
+      compileRegularLambdaCall(lambda, cons);
+    }
+  }
+
+  private void compileRegularLambdaCall(String lambda, Cons cons) {
+    int size = 0;
+    if (cons != null) {
+      size = cons.size();
+    }
     String descriptor = "(" + "Ljava/lang/Object;".repeat(size) + ")Ljava/lang/Object;";
+
     stackSize += size;
     while (cons != null) {
       _compile(cons.getCar());
       cons = cons.getCdr();
+    }
+    if (size != 0) {
+      stackSize--;
+    }
+    mv.visitMethodInsn(INVOKEVIRTUAL, lambda, "call", descriptor, false);
+    stackSize++;
+  }
+
+  private void compileVariadicLambdaCall(String lambda, Cons cons) {
+    int size = 0;
+    if (cons != null) {
+      size = cons.size();
+    }
+    String descriptor = "([Ljava/lang/Object;)Ljava/lang/Object;";
+    stackSize += size;
+
+    mv.visitLdcInsn(size);
+    mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
+    mv.visitInsn(DUP);
+    int i = 0;
+    while (cons != null) {
+      mv.visitLdcInsn(i);
+      _compile(cons.getCar());
+      mv.visitInsn(AASTORE);
+      if (i < size - 1) {
+        mv.visitInsn(DUP);
+      }
+      cons = cons.getCdr();
+      i++;
     }
     if (size != 0) {
       stackSize--;

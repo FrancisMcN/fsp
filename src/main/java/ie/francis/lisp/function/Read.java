@@ -30,6 +30,11 @@ public class Read implements Lambda {
     return parser.parse();
   }
 
+  @Override
+  public Object call(Object[] args) {
+    throw new NotImplementedException("method not implemented");
+  }
+
   public boolean isComplete() {
     return parser.isComplete();
   }

@@ -21,4 +21,9 @@ public class Car implements Lambda {
     }
     return null;
   }
+
+  @Override
+  public Object call(Object[] args) {
+    throw new NotImplementedException("method not implemented");
+  }
 }
