@@ -7,8 +7,10 @@ package ie.francis.lisp.compiler;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.Opcodes.*;
 
+import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
 import ie.francis.lisp.type.Cons;
+import ie.francis.lisp.type.Lambda;
 import ie.francis.lisp.type.Symbol;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
@@ -207,6 +209,21 @@ public class Compiler {
       return meta;
     }
 
+    if (Environment.contains(symbol)) {
+      mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
+      mv.visitInsn(DUP);
+      mv.visitLdcInsn(symbol.getValue());
+      mv.visitMethodInsn(
+          INVOKESPECIAL, "ie/francis/lisp/type/Symbol", "<init>", "(Ljava/lang/String;)V", false);
+      mv.visitMethodInsn(
+          INVOKESTATIC,
+          "ie/francis/lisp/Environment",
+          "get",
+          "(Lie/francis/lisp/type/Symbol;)Ljava/lang/Object;",
+          false);
+      return meta;
+    }
+
     if (builtins.containsKey(symbol.getValue())) {
       String builtin = builtins.get(symbol.getValue());
       mv.visitTypeInsn(Opcodes.NEW, builtin);
@@ -253,6 +270,43 @@ public class Compiler {
           return localMetadata;
         }
       }
+      if (Environment.contains(symbol)) {
+        Object object = Environment.get(symbol);
+        if (object instanceof Lambda) {
+          Lambda lambda = (Lambda) object;
+          mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
+          mv.visitInsn(DUP);
+          mv.visitLdcInsn(symbol.getValue());
+          mv.visitMethodInsn(
+              INVOKESPECIAL,
+              "ie/francis/lisp/type/Symbol",
+              "<init>",
+              "(Ljava/lang/String;)V",
+              false);
+          mv.visitMethodInsn(
+              INVOKESTATIC,
+              "ie/francis/lisp/Environment",
+              "get",
+              "(Lie/francis/lisp/type/Symbol;)Ljava/lang/Object;",
+              false);
+          //          System.out.println(lambda.getClass().getName());
+          //          System.out.println(cons.getCdr());
+          //          mv.visitTypeInsn(Opcodes.NEW, lambda.getClass().getName());
+          //          mv.visitInsn(DUP);
+          //          mv.visitMethodInsn(INVOKESPECIAL, lambda.getClass().getName(), "<init>",
+          // "()V", false);
+          compileLambdaCall(lambda.getClass().getName(), cons.getCdr());
+          return meta;
+        }
+        //        LocalTable.Local local = locals.get(symbol.getValue());
+        //        Metadata localMetadata = local.getMetadata();
+        //        if (localMetadata.getType() == Metadata.Type.LAMBDA) {
+        //          String lambdaName = localMetadata.getValue();
+        //          mv.visitVarInsn(ALOAD, local.getLocalId());
+        //          compileLambdaCall(lambdaName, cons.getCdr());
+        //          return localMetadata;
+        //        }
+      }
     }
 
     // Hack to support builtins until non-local variables are supported
@@ -270,13 +324,20 @@ public class Compiler {
   }
 
   private void compileLambdaCall(String lambda, Cons cons) {
-    String descriptor = "(" + "Ljava/lang/Object;".repeat(cons.size()) + ")Ljava/lang/Object;";
-    stackSize += cons.size();
+    mv.visitTypeInsn(CHECKCAST, lambda);
+    int size = 0;
+    if (cons != null) {
+      size = cons.size();
+    }
+    String descriptor = "(" + "Ljava/lang/Object;".repeat(size) + ")Ljava/lang/Object;";
+    stackSize += size;
     while (cons != null) {
       _compile(cons.getCar());
       cons = cons.getCdr();
     }
-    stackSize--;
+    if (size != 0) {
+      stackSize--;
+    }
     mv.visitMethodInsn(INVOKEVIRTUAL, lambda, "call", descriptor, false);
     stackSize++;
   }
@@ -339,8 +400,27 @@ public class Compiler {
       case "let":
         compileLetSpecialForm(cons);
         break;
+      case "def":
+        compileDefSpecialForm(cons);
+        break;
     }
     return meta;
+  }
+
+  private void compileDefSpecialForm(Cons cons) {
+    Symbol symbol = (Symbol) cons.getCdr().getCar();
+    quoteDepth++;
+    _compile(symbol);
+    stackSize--;
+    quoteDepth--;
+    _compile(cons.getCdr().getCdr().getCar());
+    stackSize--;
+    mv.visitMethodInsn(
+        INVOKESTATIC,
+        "ie/francis/lisp/Environment",
+        "put",
+        "(Lie/francis/lisp/type/Symbol;Ljava/lang/Object;)V",
+        false);
   }
 
   // (let ([<a> <b>]+) form*)
@@ -386,6 +466,7 @@ public class Compiler {
       Symbol symbol = (Symbol) first;
       switch (symbol.getValue()) {
         case "lambda":
+        case "def":
         case "quote":
         case "if":
         case "let":

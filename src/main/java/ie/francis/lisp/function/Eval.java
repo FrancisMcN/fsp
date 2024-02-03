@@ -15,6 +15,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public class Eval implements Lambda {
+
+  static LispClassLoader lispClassLoader = new LispClassLoader();
+
   @Override
   public Object call() {
     throw new NotImplementedException("method not implemented");
@@ -25,9 +28,9 @@ public class Eval implements Lambda {
     Compile compiler = new Compile();
     List<Artifact> artifacts = (List<Artifact>) compiler.call(arg);
 
-    LispClassLoader lispClassLoader = new LispClassLoader();
     for (Artifact artifact : artifacts) {
       lispClassLoader.defineClass(artifact.getName(), artifact.getData());
+      //      System.out.println("defined class: " + artifact.getName());
       try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
         fos.write(artifact.getData());
       } catch (IOException ex) {
