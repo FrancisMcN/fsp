@@ -39,16 +39,6 @@ public class Compiler {
     artifacts = new ArrayList<>();
     locals = new LocalTable();
     locals.add("this", null);
-
-    Environment.put(new Symbol("car"), new Car());
-    Environment.put(new Symbol("cdr"), new Cdr());
-    Environment.put(new Symbol("compile"), new Compile());
-    Environment.put(new Symbol("eval"), new Eval());
-    Environment.put(new Symbol("print"), new Print());
-    Environment.put(new Symbol("read"), new Read());
-    Environment.put(new Symbol("type"), new Type());
-    Environment.put(new Symbol("+"), new Plus());
-    Environment.put(new Symbol("-"), new Minus());
   }
 
   public Metadata compile(Object object) {

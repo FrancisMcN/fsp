@@ -4,9 +4,8 @@
 
 package ie.francis.lisp;
 
-import ie.francis.lisp.function.Eval;
-import ie.francis.lisp.function.Print;
-import ie.francis.lisp.function.Read;
+import ie.francis.lisp.function.*;
+import ie.francis.lisp.type.Symbol;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,6 +16,16 @@ public class Main {
   public static void main(String[] args) throws IOException {
 
     String code = "((lambda (x  y) ()) 1 2)";
+
+    Environment.put(new Symbol("car"), new Car());
+    Environment.put(new Symbol("cdr"), new Cdr());
+    Environment.put(new Symbol("compile"), new Compile());
+    Environment.put(new Symbol("eval"), new Eval());
+    Environment.put(new Symbol("print"), new Print());
+    Environment.put(new Symbol("read"), new Read());
+    Environment.put(new Symbol("type"), new Type());
+    Environment.put(new Symbol("+"), new Plus());
+    Environment.put(new Symbol("-"), new Minus());
 
     if (args.length > 0) {
       String filename = args[0];
