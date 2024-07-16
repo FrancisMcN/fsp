@@ -13,7 +13,6 @@ import ie.francis.fspnew.node.LambdaNode;
 import ie.francis.fspnew.node.Node;
 import ie.francis.fspnew.visitor.JavaClassGeneratorVisitor;
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
@@ -61,11 +60,12 @@ public class Repl {
         List<Artifact> artifacts = compiler.compileAst(tree);
         for (Artifact artifact : artifacts) {
           replClassLoader.defineClass(artifact.getName(), artifact.getData());
-          try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
-            fos.write(artifact.getData());
-          } catch (IOException ex) {
-            throw new RuntimeException(ex);
-          }
+          //          try (FileOutputStream fos = new FileOutputStream(artifact.getName() +
+          // ".class")) {
+          //            fos.write(artifact.getData());
+          //          } catch (IOException ex) {
+          //            throw new RuntimeException(ex);
+          //          }
         }
         Artifact last = artifacts.get(artifacts.size() - 1);
         Class<?> c = replClassLoader.loadClass(last.getName());

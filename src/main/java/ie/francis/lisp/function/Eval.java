@@ -8,8 +8,6 @@ import ie.francis.lisp.compiler.Artifact;
 import ie.francis.lisp.exception.NotImplementedException;
 import ie.francis.lisp.loader.LispClassLoader;
 import ie.francis.lisp.type.Lambda;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -31,11 +29,11 @@ public class Eval implements Lambda {
     for (Artifact artifact : artifacts) {
       lispClassLoader.defineClass(artifact.getName(), artifact.getData());
       //      System.out.println("defined class: " + artifact.getName());
-      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
-        fos.write(artifact.getData());
-      } catch (IOException ex) {
-        throw new RuntimeException(ex);
-      }
+      //      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
+      //        fos.write(artifact.getData());
+      //      } catch (IOException ex) {
+      //        throw new RuntimeException(ex);
+      //      }
     }
 
     Artifact artifactToRun = artifacts.get(artifacts.size() - 1);
