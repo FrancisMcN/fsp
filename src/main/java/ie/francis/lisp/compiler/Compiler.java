@@ -7,9 +7,7 @@ package ie.francis.lisp.compiler;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.Opcodes.*;
 
-import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
-import ie.francis.lisp.exception.UndefinedSymbolException;
 import ie.francis.lisp.function.*;
 import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Symbol;
@@ -197,22 +195,19 @@ public class Compiler {
       return meta;
     }
 
-    if (Environment.contains(symbol)) {
-      mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
-      mv.visitInsn(DUP);
-      mv.visitLdcInsn(symbol.getValue());
-      mv.visitMethodInsn(
-          INVOKESPECIAL, "ie/francis/lisp/type/Symbol", "<init>", "(Ljava/lang/String;)V", false);
-      mv.visitMethodInsn(
-          INVOKESTATIC,
-          "ie/francis/lisp/Environment",
-          "get",
-          "(Lie/francis/lisp/type/Symbol;)Ljava/lang/Object;",
-          false);
-      return meta;
-    }
+    mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
+    mv.visitInsn(DUP);
+    mv.visitLdcInsn(symbol.getValue());
+    mv.visitMethodInsn(
+        INVOKESPECIAL, "ie/francis/lisp/type/Symbol", "<init>", "(Ljava/lang/String;)V", false);
+    mv.visitMethodInsn(
+        INVOKESTATIC,
+        "ie/francis/lisp/Environment",
+        "get",
+        "(Lie/francis/lisp/type/Symbol;)Ljava/lang/Object;",
+        false);
 
-    throw new UndefinedSymbolException(String.format("%s", symbol));
+    return meta;
   }
 
   private Metadata compileCons(Cons cons) {
@@ -247,13 +242,11 @@ public class Compiler {
           return localMetadata;
         }
       }
-      if (Environment.contains(symbol)) {
-        mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
-        mv.visitInsn(DUP);
-        mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
-        compileLambdaCall(cons);
-        return meta;
-      }
+      mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
+      mv.visitInsn(DUP);
+      mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
+      compileLambdaCall(cons);
+      return meta;
     }
 
     throw new InvalidConsException("expected a function in first cons cell");
@@ -286,7 +279,8 @@ public class Compiler {
     if (size != 0) {
       stackSize--;
     }
-    mv.visitMethodInsn(INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
+    mv.visitMethodInsn(
+        INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
     stackSize++;
   }
 
@@ -315,7 +309,8 @@ public class Compiler {
     if (size != 0) {
       stackSize--;
     }
-    mv.visitMethodInsn(INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
+    mv.visitMethodInsn(
+        INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
     stackSize++;
   }
 

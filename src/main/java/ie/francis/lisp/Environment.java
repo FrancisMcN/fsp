@@ -4,6 +4,7 @@
 
 package ie.francis.lisp;
 
+import ie.francis.lisp.exception.UndefinedSymbolException;
 import ie.francis.lisp.type.Symbol;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,8 +20,10 @@ public class Environment {
   }
 
   public static Object get(Symbol name) {
-    //        System.out.println( Environment.map.get(name));
-    return Environment.map.get(name);
+    if (Environment.map.containsKey(name)) {
+      return Environment.map.get(name);
+    }
+    throw new UndefinedSymbolException(name.getValue());
   }
 
   public static boolean contains(Symbol symbol) {
