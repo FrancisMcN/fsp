@@ -227,6 +227,9 @@ public class Compiler {
       Object car = ((Cons) first).getCar();
       if (car instanceof Symbol && ((Symbol) car).getValue().equals("lambda")) {
         compileSpecialForm((Cons) first);
+        mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
+        mv.visitInsn(DUP);
+        mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
         compileLambdaCall(cons);
         return meta;
       }
