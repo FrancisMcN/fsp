@@ -5,21 +5,17 @@
 package ie.francis.lisp.function;
 
 import ie.francis.lisp.compiler.Artifact;
-import ie.francis.lisp.exception.NotImplementedException;
 import ie.francis.lisp.loader.LispClassLoader;
 import ie.francis.lisp.type.Lambda;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-public class Eval implements Lambda {
+public class Eval extends BaseLambda implements Lambda {
 
   static LispClassLoader lispClassLoader = new LispClassLoader();
-
-  @Override
-  public Object call() {
-    throw new NotImplementedException("method not implemented");
-  }
 
   @Override
   public Object call(Object arg) {
@@ -28,12 +24,12 @@ public class Eval implements Lambda {
 
     for (Artifact artifact : artifacts) {
       lispClassLoader.defineClass(artifact.getName(), artifact.getData());
-      //      System.out.println("defined class: " + artifact.getName());
-      //      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
-      //        fos.write(artifact.getData());
-      //      } catch (IOException ex) {
-      //        throw new RuntimeException(ex);
-      //      }
+//       System.out.println("defined class: " + artifact.getName());
+//      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
+//        fos.write(artifact.getData());
+//      } catch (IOException ex) {
+//        throw new RuntimeException(ex);
+//      }
     }
 
     Artifact artifactToRun = artifacts.get(artifacts.size() - 1);
@@ -50,10 +46,5 @@ public class Eval implements Lambda {
         | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Override
-  public Object call(Object[] args) {
-    throw new NotImplementedException("method not implemented");
   }
 }

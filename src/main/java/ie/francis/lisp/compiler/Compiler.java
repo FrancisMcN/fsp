@@ -9,9 +9,9 @@ import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
+import ie.francis.lisp.exception.UndefinedSymbolException;
 import ie.francis.lisp.function.*;
 import ie.francis.lisp.type.Cons;
-import ie.francis.lisp.type.Lambda;
 import ie.francis.lisp.type.Symbol;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
@@ -212,8 +212,7 @@ public class Compiler {
       return meta;
     }
 
-    mv.visitLdcInsn("demo symbol since symbol resolution doesn't work");
-    return meta;
+    throw new UndefinedSymbolException(String.format("%s", symbol));
   }
 
   private Metadata compileCons(Cons cons) {
@@ -232,8 +231,7 @@ public class Compiler {
       Object car = ((Cons) first).getCar();
       if (car instanceof Symbol && ((Symbol) car).getValue().equals("lambda")) {
         compileSpecialForm((Cons) first);
-        String lambda = artifacts.get(artifacts.size() - 1).getName();
-        compileLambdaCall(lambda, cons.getCdr());
+        compileLambdaCall(cons);
         return meta;
       }
     }
@@ -244,68 +242,36 @@ public class Compiler {
         LocalTable.Local local = locals.get(symbol.getValue());
         Metadata localMetadata = local.getMetadata();
         if (localMetadata.getType() == Metadata.Type.LAMBDA) {
-          String lambdaName = localMetadata.getValue();
           mv.visitVarInsn(ALOAD, local.getLocalId());
-          compileLambdaCall(lambdaName, cons.getCdr());
+          compileLambdaCall(cons);
           return localMetadata;
         }
       }
       if (Environment.contains(symbol)) {
-        Object object = Environment.get(symbol);
-        if (object instanceof Lambda) {
-          Lambda lambda = (Lambda) object;
-          mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
-          mv.visitInsn(DUP);
-          mv.visitLdcInsn(symbol.getValue());
-          mv.visitMethodInsn(
-              INVOKESPECIAL,
-              "ie/francis/lisp/type/Symbol",
-              "<init>",
-              "(Ljava/lang/String;)V",
-              false);
-          mv.visitMethodInsn(
-              INVOKESTATIC,
-              "ie/francis/lisp/Environment",
-              "get",
-              "(Lie/francis/lisp/type/Symbol;)Ljava/lang/Object;",
-              false);
-          //          System.out.println(lambda.getClass().getName());
-          //          System.out.println(cons.getCdr());
-          //          mv.visitTypeInsn(Opcodes.NEW, lambda.getClass().getName());
-          //          mv.visitInsn(DUP);
-          //          mv.visitMethodInsn(INVOKESPECIAL, lambda.getClass().getName(), "<init>",
-          // "()V", false);
-          compileLambdaCall(lambda.getClass().getName().replace(".", "/"), cons.getCdr());
-          return meta;
-        }
-        //        LocalTable.Local local = locals.get(symbol.getValue());
-        //        Metadata localMetadata = local.getMetadata();
-        //        if (localMetadata.getType() == Metadata.Type.LAMBDA) {
-        //          String lambdaName = localMetadata.getValue();
-        //          mv.visitVarInsn(ALOAD, local.getLocalId());
-        //          compileLambdaCall(lambdaName, cons.getCdr());
-        //          return localMetadata;
-        //        }
+        mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
+        mv.visitInsn(DUP);
+        mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
+        compileLambdaCall(cons);
+        return meta;
       }
     }
 
     throw new InvalidConsException("expected a function in first cons cell");
   }
 
-  private void compileLambdaCall(String lambda, Cons cons) {
-    mv.visitTypeInsn(CHECKCAST, lambda);
+  private void compileLambdaCall(Cons cons) {
     int size = 0;
     if (cons != null) {
       size = cons.size();
     }
-    if (size > 1) {
-      compileVariadicLambdaCall(lambda, cons);
+    if (size > 5) {
+      compileVariadicLambdaCall(cons);
     } else {
-      compileRegularLambdaCall(lambda, cons);
+      compileRegularLambdaCall(cons);
     }
   }
 
-  private void compileRegularLambdaCall(String lambda, Cons cons) {
+  private void compileRegularLambdaCall(Cons cons) {
     int size = 0;
     if (cons != null) {
       size = cons.size();
@@ -320,11 +286,11 @@ public class Compiler {
     if (size != 0) {
       stackSize--;
     }
-    mv.visitMethodInsn(INVOKEVIRTUAL, lambda, "call", descriptor, false);
+    mv.visitMethodInsn(INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
     stackSize++;
   }
 
-  private void compileVariadicLambdaCall(String lambda, Cons cons) {
+  private void compileVariadicLambdaCall(Cons cons) {
     int size = 0;
     if (cons != null) {
       size = cons.size();
@@ -340,7 +306,7 @@ public class Compiler {
       mv.visitLdcInsn(i);
       _compile(cons.getCar());
       mv.visitInsn(AASTORE);
-      if (i < size - 1) {
+      if (i < (size - 1)) {
         mv.visitInsn(DUP);
       }
       cons = cons.getCdr();
@@ -349,7 +315,7 @@ public class Compiler {
     if (size != 0) {
       stackSize--;
     }
-    mv.visitMethodInsn(INVOKEVIRTUAL, lambda, "call", descriptor, false);
+    mv.visitMethodInsn(INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
     stackSize++;
   }
 

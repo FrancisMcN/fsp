@@ -7,7 +7,7 @@ package ie.francis.lisp.function;
 import ie.francis.lisp.exception.NotImplementedException;
 import ie.francis.lisp.type.Lambda;
 
-public class Print implements Lambda {
+public class Print extends BaseLambda implements Lambda {
   @Override
   public Object call() {
     throw new NotImplementedException("method not implemented");

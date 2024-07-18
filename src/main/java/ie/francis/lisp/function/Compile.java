@@ -5,24 +5,14 @@
 package ie.francis.lisp.function;
 
 import ie.francis.lisp.compiler.Compiler;
-import ie.francis.lisp.exception.NotImplementedException;
 import ie.francis.lisp.type.Lambda;
 
-public class Compile implements Lambda {
-  @Override
-  public Object call() {
-    throw new NotImplementedException("method not implemented");
-  }
+public class Compile extends BaseLambda implements Lambda {
 
   @Override
   public Object call(Object arg) {
     Compiler compiler = new Compiler();
     compiler.compile(arg);
     return compiler.getArtifacts();
-  }
-
-  @Override
-  public Object call(Object[] args) {
-    throw new NotImplementedException("method not implemented");
   }
 }

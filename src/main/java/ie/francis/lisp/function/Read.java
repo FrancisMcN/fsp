@@ -9,7 +9,7 @@ import ie.francis.lisp.parser.Parser;
 import ie.francis.lisp.scanner.Scanner;
 import ie.francis.lisp.type.Lambda;
 
-public class Read implements Lambda {
+public class Read extends BaseLambda implements Lambda {
 
   private Scanner scanner;
   private Parser parser;

@@ -4,15 +4,10 @@
 
 package ie.francis.lisp.function;
 
-import ie.francis.lisp.exception.NotImplementedException;
 import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Lambda;
 
-public class Car implements Lambda {
-  @Override
-  public Object call() {
-    throw new NotImplementedException("method not implemented");
-  }
+public class Car extends BaseLambda implements Lambda {
 
   @Override
   public Object call(Object arg) {
@@ -20,10 +15,5 @@ public class Car implements Lambda {
       return ((Cons) arg).getCar();
     }
     return null;
-  }
-
-  @Override
-  public Object call(Object[] args) {
-    throw new NotImplementedException("method not implemented");
   }
 }
