@@ -13,6 +13,7 @@ import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Symbol;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -424,7 +425,35 @@ public class Compiler {
     locals.popScope();
   }
 
-  private void compileIfSpecialForm(Cons cons) {}
+  private void compileIfSpecialForm(Cons cons) {
+
+    // Compile condition, expecting a Cons cell
+    _compile(cons.getCdr().getCar());
+
+    mv.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
+    mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);
+    Label startOfElseLabel = new Label();
+    Label endOfIfLabel = new Label();
+    // Compare result of condition
+    mv.visitJumpInsn(IFEQ, startOfElseLabel);
+
+    // Compile true block
+    if (cons.getCdr().getCdr() != null) {
+      _compile(cons.getCdr().getCdr().getCar());
+    }
+
+    // Jump past the false block after entering the true block if it exists
+    mv.visitJumpInsn(GOTO, endOfIfLabel);
+    mv.visitLabel(startOfElseLabel);
+
+    // Compile false block if it exists
+    if (cons.getCdr().getCdr() != null && cons.getCdr().getCdr().getCdr() != null) {
+      _compile(cons.getCdr().getCdr().getCdr().getCar());
+    } else {
+      mv.visitInsn(ACONST_NULL);
+    }
+    mv.visitLabel(endOfIfLabel);
+  }
 
   private void compileQuoteSpecialForm(Cons cons) {
     quoteDepth++;

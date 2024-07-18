@@ -27,6 +27,9 @@ public class Main {
     Environment.put(new Symbol("type"), new Type());
     Environment.put(new Symbol("+"), new Plus());
     Environment.put(new Symbol("-"), new Minus());
+    Environment.put(new Symbol("="), new Equal());
+    Environment.put(new Symbol("<"), new LessThan());
+    Environment.put(new Symbol(">"), new GreaterThan());
 
     if (args.length > 0) {
       String filename = args[0];
