@@ -16,6 +16,7 @@ import java.nio.file.Path;
 public class Main {
   public static void main(String[] args) throws IOException {
 
+    Environment.put(new Symbol("nil"), null);
     Environment.put(new Symbol("apply"), new Apply());
     Environment.put(new Symbol("car"), new Car());
     Environment.put(new Symbol("cdr"), new Cdr());

@@ -8,8 +8,7 @@ import ie.francis.lisp.type.Symbol;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CompilerTest {
 
@@ -108,6 +107,85 @@ public class CompilerTest {
         assertEquals("(lambda (x y) (+ x y))", String.format("%s", lambda));
     }
 
+    @Test
+    void testArgmentsAreNotEvaluatedForMacro() {
+        eval("(def identity-macro (macro (x) x))");
+        Object output = eval("(macroexpand-1 '(identity-macro (+ 1 2 3)))");
+        assertEquals("(+ 1 2 3)", String.format("%s", output));
+    }
+
+    @Test
+    void testArgmentsAreEvaluatedForLambda() {
+        eval("(def identity-lambda (lambda (x) x))");
+        Object output = eval("(identity-lambda (+ 1 2 3))");
+        assertEquals(6, output);
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForInteger() {
+        Object output = eval("(type 100)");
+        assertEquals("java.lang.Integer", output);
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForString() {
+        Object output = eval("(type \"Hello World\")");
+        assertEquals("java.lang.String", output);
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForSymbol() {
+        Object output = eval("(type 'a)");
+        assertEquals("ie.francis.lisp.type.Symbol", output);
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForBooleanTrue() {
+        Object output = eval("(type true)");
+        assertEquals("java.lang.Boolean", output);
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForBooleanFalse() {
+        Object output = eval("(type false)");
+        assertEquals("java.lang.Boolean", output);
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForLambda() {
+        Object output = eval("(type (lambda () ()))");
+        assertEquals("Lambda", output.toString().substring(0, 6));
+    }
+
+    @Test
+    void testTypeFunctionReturnsCorrectTypeForMacro() {
+        Object output = eval("(type (macro () ()))");
+        assertEquals("Macro", output.toString().substring(0, 5));
+    }
+
+    @Test
+    void testEmptyLambdaIsCallable() {
+        assertDoesNotThrow(() -> eval("((lambda () ()))"));
+    }
+
+    @Test
+    void testEmptyLambdaReturnsNull() {
+        Object output = eval("((lambda () ()))");
+        assertNull(output);
+    }
+
+    @Test
+    void testEmptyListisNull() {
+        Object output = eval("()");
+        assertNull(output);
+    }
+
+    @Test
+    void testEmptyListComparisonIsCorrect() {
+        Object output = eval("(= () nil)");
+        assertTrue((Boolean) output);
+    }
+
     Object eval(String input) {
         Read reader = new Read();
         Eval eval = new Eval();
@@ -121,6 +199,7 @@ public class CompilerTest {
 
     @BeforeAll
     static void addBuiltinsToEnvironment() {
+        Environment.put(new Symbol("nil"), null);
         Environment.put(new Symbol("apply"), new Apply());
         Environment.put(new Symbol("car"), new Car());
         Environment.put(new Symbol("cdr"), new Cdr());
