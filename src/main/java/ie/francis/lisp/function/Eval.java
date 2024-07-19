@@ -25,11 +25,11 @@ public class Eval extends BaseLambda implements Lambda {
     for (Artifact artifact : artifacts) {
       lispClassLoader.defineClass(artifact.getName(), artifact.getData());
       //      System.out.println("defined class: " + artifact.getName());
-      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
-        fos.write(artifact.getData());
-      } catch (IOException ex) {
-        throw new RuntimeException(ex);
-      }
+//      try (FileOutputStream fos = new FileOutputStream(artifact.getName() + ".class")) {
+//        fos.write(artifact.getData());
+//      } catch (IOException ex) {
+//        throw new RuntimeException(ex);
+//      }
     }
 
     Artifact artifactToRun = artifacts.get(artifacts.size() - 1);

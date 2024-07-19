@@ -16,8 +16,6 @@ import java.nio.file.Path;
 public class Main {
   public static void main(String[] args) throws IOException {
 
-    String code = "((lambda (x  y) ()) 1 2)";
-
     Environment.put(new Symbol("apply"), new Apply());
     Environment.put(new Symbol("car"), new Car());
     Environment.put(new Symbol("cdr"), new Cdr());
