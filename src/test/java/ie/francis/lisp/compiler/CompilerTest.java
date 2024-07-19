@@ -186,6 +186,12 @@ public class CompilerTest {
         assertTrue((Boolean) output);
     }
 
+    @Test
+    void testQuotedNilEqualsNil() {
+        Object output = eval("(= 'nil nil)");
+        assertTrue((Boolean) output);
+    }
+
     Object eval(String input) {
         Read reader = new Read();
         Eval eval = new Eval();

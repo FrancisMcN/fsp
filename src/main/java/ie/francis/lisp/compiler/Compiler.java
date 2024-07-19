@@ -202,7 +202,7 @@ public class Compiler {
   private Metadata compileSymbol(Symbol symbol) {
     Metadata meta = new Metadata(Metadata.Type.SYMBOL, symbol.getValue());
     stackSize++;
-    if (isQuoted()) {
+    if (isQuoted() && !symbol.getValue().equals("nil")) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
       mv.visitInsn(DUP);
       mv.visitLdcInsn(symbol.getValue());
