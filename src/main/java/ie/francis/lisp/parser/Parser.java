@@ -67,6 +67,7 @@ public class Parser {
       case LPAREN:
         return list();
     }
+    System.out.println(scanner);
     throw new SyntaxErrorException("syntax error");
   }
 

@@ -22,11 +22,8 @@ public class Read extends BaseLambda implements Lambda {
   @Override
   public Object call(Object arg) {
     String input = (String) arg;
-    if (scanner == null || parser == null) {
-      scanner = new Scanner(input);
-      parser = new Parser(scanner);
-    }
-
+    scanner = new Scanner(input);
+    parser = new Parser(scanner);
     return parser.parse();
   }
 
