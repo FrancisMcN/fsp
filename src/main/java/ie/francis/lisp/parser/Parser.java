@@ -21,8 +21,6 @@ public class Parser {
     this.isComplete = false;
   }
 
-  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | list
-  // list : '(' expr* ')'
   public Object parse() {
     Object expr = expr();
     if (!scanner.hasNext()) {
@@ -35,10 +33,19 @@ public class Parser {
     return isComplete;
   }
 
+  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | list | 'expr
   private Object expr() {
     Token token = scanner.peek();
 
     switch (token.getType()) {
+      case QUOTE:
+        {
+          scanner.next();
+          Cons cons = new Cons();
+          cons.setCar(new Symbol("quote"));
+          cons.setCdr(new Cons().setCar(expr()));
+          return cons;
+        }
       case SYMBOL:
         scanner.next();
         return new Symbol(token.getValue());
@@ -63,6 +70,7 @@ public class Parser {
     throw new SyntaxErrorException("syntax error");
   }
 
+  // list : '(' expr* ')'
   private Object list() {
     Cons cons = new Cons();
     Cons prev = cons;

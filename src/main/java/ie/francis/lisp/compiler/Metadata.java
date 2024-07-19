@@ -14,6 +14,7 @@ public class Metadata {
     BOOLEAN,
     CONS,
     LAMBDA,
+    MACRO,
     NIL
   }
 

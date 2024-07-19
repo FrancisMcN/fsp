@@ -7,11 +7,14 @@ package ie.francis.lisp.compiler;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.Opcodes.*;
 
+import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
 import ie.francis.lisp.function.*;
 import ie.francis.lisp.type.Cons;
+import ie.francis.lisp.type.Macro;
 import ie.francis.lisp.type.Symbol;
 import java.util.*;
+import java.util.List;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -24,20 +27,29 @@ public class Compiler {
 
   private int quoteDepth;
 
-  private final String className;
+  private String className;
   private final List<Artifact> artifacts;
 
   private final LocalTable locals;
 
   private int stackSize;
 
+  private boolean isMacro;
+
   public Compiler() {
     quoteDepth = 0;
     stackSize = 0;
+    isMacro = false;
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
     artifacts = new ArrayList<>();
     locals = new LocalTable();
     locals.add("this", null);
+  }
+
+  public Compiler(boolean isMacro) {
+    this();
+    this.isMacro = isMacro;
+    className = String.format("Macro%d", new Random().nextInt(1000000000));
   }
 
   public Metadata compile(Object object) {
@@ -58,8 +70,7 @@ public class Compiler {
     return meta;
   }
 
-  public Metadata compileLambda(Object object) {
-
+  public Metadata compileLambdaOrMacro(Object object) {
     // Pre class-generation
     start();
 
@@ -92,8 +103,18 @@ public class Compiler {
     finish();
 
     this.artifacts.add(new Artifact(className, cw.toByteArray()));
-
+    if (isMacro) {
+      return new Metadata(Metadata.Type.MACRO, className);
+    }
     return new Metadata(Metadata.Type.LAMBDA, className);
+  }
+
+  public Metadata compileLambda(Object object) {
+    return compileLambdaOrMacro(object);
+  }
+
+  public Metadata compileMacro(Object object) {
+    return compileLambdaOrMacro(object);
   }
 
   public List<Artifact> getArtifacts() {
@@ -131,14 +152,13 @@ public class Compiler {
   }
 
   private void start() {
+    String impl = "ie/francis/lisp/type/Lambda";
+    if (isMacro) {
+      impl = "ie/francis/lisp/type/Macro";
+    }
     cw = new ClassWriter(COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
     cw.visit(
-        V1_5,
-        ACC_PUBLIC + ACC_MODULE,
-        className,
-        null,
-        "java/lang/Object",
-        new String[] {"ie/francis/lisp/type/Lambda"});
+        V1_5, ACC_PUBLIC + ACC_MODULE, className, null, "java/lang/Object", new String[] {impl});
 
     // Add a constructor to the generated class
     mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
@@ -224,36 +244,33 @@ public class Compiler {
     }
 
     if (first instanceof Cons) {
-      Object car = ((Cons) first).getCar();
-      if (car instanceof Symbol && ((Symbol) car).getValue().equals("lambda")) {
-        compileSpecialForm((Cons) first);
+      Metadata metadata = _compile(first);
+      if (metadata.getType() == Metadata.Type.LAMBDA) {
         mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
         mv.visitInsn(DUP);
         mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
         compileLambdaCall(cons);
-        return meta;
       }
+      return meta;
     }
     if (first instanceof Symbol) {
       Symbol symbol = (Symbol) first;
-      // Lookup local vars for lambda
-      if (locals.contains(symbol.getValue())) {
-        LocalTable.Local local = locals.get(symbol.getValue());
-        Metadata localMetadata = local.getMetadata();
-        if (localMetadata.getType() == Metadata.Type.LAMBDA) {
-          mv.visitVarInsn(ALOAD, local.getLocalId());
-          compileLambdaCall(cons);
-          return localMetadata;
-        }
-      }
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
       mv.visitInsn(DUP);
       mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
-      compileLambdaCall(cons);
+      if (Environment.contains(symbol) && Environment.get(symbol) instanceof Macro) {
+        _compile(expandMacro(cons));
+      } else {
+        compileLambdaCall(cons);
+      }
       return meta;
     }
 
     throw new InvalidConsException("expected a function in first cons cell");
+  }
+
+  private Object expandMacro(Cons cons) {
+    return new MacroExpand1().call(cons);
   }
 
   private void compileLambdaCall(Cons cons) {
@@ -262,13 +279,13 @@ public class Compiler {
       size = cons.size();
     }
     if (size > 5) {
-      compileVariadicLambdaCall(cons);
+      compileVariadicCall(cons, true);
     } else {
-      compileRegularLambdaCall(cons);
+      compileRegularCall(cons, true);
     }
   }
 
-  private void compileRegularLambdaCall(Cons cons) {
+  private void compileRegularCall(Cons cons, boolean evaluateArgs) {
     int size = 0;
     if (cons != null) {
       size = cons.size();
@@ -276,9 +293,19 @@ public class Compiler {
     String descriptor = "(" + "Ljava/lang/Object;".repeat(size) + ")Ljava/lang/Object;";
 
     stackSize += size;
+    if (cons != null) {
+      _compile(cons.getCar());
+    }
+    cons = cons.getCdr();
+    if (!evaluateArgs) {
+      quoteDepth++;
+    }
     while (cons != null) {
       _compile(cons.getCar());
       cons = cons.getCdr();
+    }
+    if (!evaluateArgs) {
+      quoteDepth--;
     }
     if (size != 0) {
       stackSize--;
@@ -288,7 +315,7 @@ public class Compiler {
     stackSize++;
   }
 
-  private void compileVariadicLambdaCall(Cons cons) {
+  private void compileVariadicCall(Cons cons, boolean evaluateArgs) {
     int size = 0;
     if (cons != null) {
       size = cons.size();
@@ -300,6 +327,19 @@ public class Compiler {
     mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
     mv.visitInsn(DUP);
     int i = 0;
+    if (cons != null) {
+      mv.visitLdcInsn(i);
+      _compile(cons.getCar());
+      mv.visitInsn(AASTORE);
+      if (i < (size - 1)) {
+        mv.visitInsn(DUP);
+      }
+      cons = cons.getCdr();
+      i++;
+    }
+    if (!evaluateArgs) {
+      quoteDepth++;
+    }
     while (cons != null) {
       mv.visitLdcInsn(i);
       _compile(cons.getCar());
@@ -309,6 +349,9 @@ public class Compiler {
       }
       cons = cons.getCdr();
       i++;
+    }
+    if (!evaluateArgs) {
+      quoteDepth--;
     }
     if (size != 0) {
       stackSize--;
@@ -363,6 +406,18 @@ public class Compiler {
           mv.visitTypeInsn(Opcodes.NEW, lambda);
           mv.visitInsn(DUP);
           mv.visitMethodInsn(INVOKESPECIAL, lambda, "<init>", "()V", false);
+          this.artifacts.addAll(compiler.artifacts);
+          stackSize++;
+          break;
+        }
+      case "macro":
+        {
+          Compiler compiler = new Compiler(true);
+          meta = compiler.compileMacro(cons);
+          String macro = compiler.artifacts.get(compiler.artifacts.size() - 1).getName();
+          mv.visitTypeInsn(Opcodes.NEW, macro);
+          mv.visitInsn(DUP);
+          mv.visitMethodInsn(INVOKESPECIAL, macro, "<init>", "()V", false);
           this.artifacts.addAll(compiler.artifacts);
           stackSize++;
           break;
@@ -470,6 +525,7 @@ public class Compiler {
       Symbol symbol = (Symbol) first;
       switch (symbol.getValue()) {
         case "lambda":
+        case "macro":
         case "def":
         case "quote":
         case "if":

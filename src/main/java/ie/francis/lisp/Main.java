@@ -5,6 +5,7 @@
 package ie.francis.lisp;
 
 import ie.francis.lisp.function.*;
+import ie.francis.lisp.function.macro.Func;
 import ie.francis.lisp.type.Symbol;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +26,9 @@ public class Main {
     Environment.put(new Symbol("print"), new Print());
     Environment.put(new Symbol("read"), new Read());
     Environment.put(new Symbol("type"), new Type());
+    Environment.put(new Symbol("list"), new List());
+    Environment.put(new Symbol("macroexpand-1"), new MacroExpand1());
+    Environment.put(new Symbol("func"), new Func());
     Environment.put(new Symbol("+"), new Plus());
     Environment.put(new Symbol("-"), new Minus());
     Environment.put(new Symbol("="), new Equal());
