@@ -20,6 +20,10 @@ public class Scanner {
     this.lineNo = 1;
   }
 
+  public int getPtr() {
+    return ptr;
+  }
+
   public boolean hasNext() {
     return peek().getType() != Type.EOF;
   }

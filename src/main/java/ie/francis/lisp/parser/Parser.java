@@ -22,30 +22,39 @@ public class Parser {
   }
 
   public Object parse() {
-    Object expr = expr();
-    if (!scanner.hasNext()) {
-      isComplete = true;
-    }
-    return expr;
+
+    return program();
+
+    //    Object object = null;
+    //    if (scanner.hasNext()) {
+    //      object = expr();
+    //    }
+    //
+    //    Cons cons = new Cons();
+    //    cons.setCar(new Symbol("progn"));
+    //    cons.setCdr(new Cons().setCar(object));
+    //    cons = cons.getCdr();
+    //    while (scanner.hasNext()) {
+    //      cons.setCdr(new Cons());
+    //      cons = cons.getCdr();
+    //      cons.setCar(expr());
+    //    }
+    //
+    //    return cons;
+
   }
 
-  public boolean isComplete() {
-    return isComplete;
+  // program : expr
+  public Object program() {
+
+    return expr();
   }
 
-  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | list | 'expr
+  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | 'expr | list
   private Object expr() {
     Token token = scanner.peek();
 
     switch (token.getType()) {
-      case QUOTE:
-        {
-          scanner.next();
-          Cons cons = new Cons();
-          cons.setCar(new Symbol("quote"));
-          cons.setCdr(new Cons().setCar(expr()));
-          return cons;
-        }
       case SYMBOL:
         scanner.next();
         return new Symbol(token.getValue());
@@ -64,11 +73,19 @@ public class Parser {
           }
           return Integer.parseInt(tokenValue);
         }
+      case QUOTE:
+        {
+          scanner.next();
+          Cons cons = new Cons();
+          cons.setCar(new Symbol("quote"));
+          cons.setCdr(new Cons().setCar(expr()));
+          return cons;
+        }
       case LPAREN:
         return list();
     }
-    System.out.println(scanner);
-    throw new SyntaxErrorException("syntax error");
+
+    throw new SyntaxErrorException(scanner.peek().getValue());
   }
 
   // list : '(' expr* ')'
@@ -100,5 +117,9 @@ public class Parser {
     }
     scanner.next();
     return head;
+  }
+
+  public boolean isComplete() {
+    return isComplete;
   }
 }
