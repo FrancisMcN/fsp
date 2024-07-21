@@ -78,12 +78,8 @@ public class CompilerTest {
 
     @Test
     void testCallingReadOfBooleanTrue() {
-        Read reader = new Read();
-        Eval eval = new Eval();
-        System.out.println(eval.call(reader.call("(read \"true\")")));
-        System.out.println(eval.call(reader.call("(read \"true\")")));
-//        Object output = eval("(read \"true\")");
-//        assertEquals(true, output);
+        Object output = eval("(read \"true\")");
+        assertEquals(true, output);
     }
 
     @Test

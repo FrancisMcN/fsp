@@ -1,4 +1,5 @@
 import java.text.SimpleDateFormat
+import java.time.Year
 
 plugins {
     id 'java'
@@ -70,10 +71,11 @@ sourceSets {
 }
 
 spotless {
-    String header = '''/*
- * (c) 2023 Francis McNamee
+    String header = """/*
+ * (c) ${Year.now().getValue()} Francis McNamee
  * */
-''' + "\n"
+ 
+"""
 
     java {
         ratchetFrom 'origin/main'

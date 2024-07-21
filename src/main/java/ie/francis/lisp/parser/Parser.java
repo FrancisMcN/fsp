@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.parser;
 
 import ie.francis.lisp.exception.SyntaxErrorException;
@@ -24,24 +24,6 @@ public class Parser {
   public Object parse() {
 
     return program();
-
-    //    Object object = null;
-    //    if (scanner.hasNext()) {
-    //      object = expr();
-    //    }
-    //
-    //    Cons cons = new Cons();
-    //    cons.setCar(new Symbol("progn"));
-    //    cons.setCdr(new Cons().setCar(object));
-    //    cons = cons.getCdr();
-    //    while (scanner.hasNext()) {
-    //      cons.setCdr(new Cons());
-    //      cons = cons.getCdr();
-    //      cons.setCar(expr());
-    //    }
-    //
-    //    return cons;
-
   }
 
   // program : expr
