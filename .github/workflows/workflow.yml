@@ -22,6 +22,8 @@ jobs:
         uses: gradle/wrapper-validation-action@ccb4328a959376b642e027874838f60f8e596de3
       - name: Run Tests
         run: ./gradlew test
+      - run: ls build/
+      - run: ls build/test-results
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()    # run this step even if previous step failed
