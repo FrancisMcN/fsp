@@ -206,6 +206,18 @@ public class CompilerTest {
     }
 
     @Test
+    void testTwoSymbolsAreEqual() {
+        Object output = eval("(= (quote a) 'a)");
+        assertTrue((Boolean) output);
+    }
+
+    @Test
+    void testTwoDifferentSymbolsAreNotEqual() {
+        Object output = eval("(= 'b 'c)");
+        assertFalse((Boolean) output);
+    }
+
+    @Test
     void testDoSpecialFormWithSingleArgument() {
         Object output = eval("(do 1)");
         assertEquals(1, output);
