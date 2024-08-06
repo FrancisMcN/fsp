@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.compiler;
 
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
@@ -434,8 +434,19 @@ public class Compiler {
       case "def":
         compileDefSpecialForm(cons);
         break;
+      case "do":
+        compileDoSpecialForm(cons);
+        break;
     }
     return meta;
+  }
+
+  private void compileDoSpecialForm(Cons cons) {
+    Cons body = cons.getCdr();
+    while (body != null) {
+      _compile(body.getCar());
+      body = body.getCdr();
+    }
   }
 
   private void compileDefSpecialForm(Cons cons) {
@@ -530,6 +541,7 @@ public class Compiler {
         case "quote":
         case "if":
         case "let":
+        case "do":
           return true;
       }
     }

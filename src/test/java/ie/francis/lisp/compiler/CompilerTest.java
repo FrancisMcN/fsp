@@ -193,6 +193,24 @@ public class CompilerTest {
         assertTrue((Boolean) output);
     }
 
+    @Test
+    void testDoSpecialFormWithSingleArgument() {
+        Object output = eval("(do 1)");
+        assertEquals(1, output);
+    }
+
+    @Test
+    void testDoSpecialFormWithMultipleArguments() {
+        Object output = eval("(do 1 2 3 4 5 6 7 8 9)");
+        assertEquals(9, output);
+    }
+
+    @Test
+    void testDoSpecialFormEvaluatesEachExpression() {
+        Object output = eval("(do (def x 2) (def y 3) (+ x y))");
+        assertEquals(5, output);
+    }
+
     Object eval(String input) {
         Read reader = new Read();
         Eval eval = new Eval();
