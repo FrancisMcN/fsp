@@ -20,6 +20,18 @@ public class CompilerTest {
     }
 
     @Test
+    void testBuiltinPlusWithOneArgument() {
+        Object output = eval("(+ 5)");
+        assertEquals(5, output);
+    }
+
+    @Test
+    void testBuiltinMinusWithOneArgument() {
+        Object output = eval("(- 5)");
+        assertEquals(-5, output);
+    }
+
+    @Test
     void testBuiltinPlus() {
         Object output = eval("(+ 1 2 3)");
         assertEquals(6, output);

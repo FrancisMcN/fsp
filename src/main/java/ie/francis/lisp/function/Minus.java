@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.function;
 
 import ie.francis.lisp.type.Lambda;
@@ -14,7 +14,7 @@ public class Minus extends BaseLambda implements Lambda {
 
   @Override
   public Object call(Object arg) {
-    return (Integer) arg;
+    return -(Integer) arg;
   }
 
   @Override
