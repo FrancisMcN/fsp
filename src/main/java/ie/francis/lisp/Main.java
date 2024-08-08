@@ -40,9 +40,11 @@ public class Main {
       Read reader = new Read();
       Eval eval = new Eval();
 
-      //      do {
-      new Print().call(eval.call(reader.call(input)));
-      //      } while (!reader.isComplete());
+      Buffer buff = new Buffer(input);
+      while (!buff.complete()) {
+        new Print().call(eval.call(reader.call(buff)));
+      }
+
       return;
     }
 
