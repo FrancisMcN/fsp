@@ -41,9 +41,14 @@ public class Main {
       Eval eval = new Eval();
 
       Buffer buff = new Buffer(input);
+      Object result = null;
       while (!buff.complete()) {
-        new Print().call(eval.call(reader.call(buff)));
+        Object temp = reader.call(buff);
+        if (temp != null) {
+          result = eval.call(temp);
+        }
       }
+      new Print().call(result);
 
       return;
     }
@@ -67,7 +72,10 @@ public class Main {
         Eval eval = new Eval();
         Buffer buff = new Buffer(input);
         while (!buff.complete()) {
-          new Print().call(eval.call(reader.call(buff)));
+          Object temp = reader.call(buff);
+          if (temp != null) {
+            new Print().call(eval.call(temp));
+          }
         }
 
       } catch (RuntimeException exception) {
