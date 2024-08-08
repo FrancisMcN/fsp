@@ -4,6 +4,8 @@
  
 package ie.francis.lisp.parser;
 
+import static ie.francis.lisp.token.Type.EOF;
+
 import ie.francis.lisp.exception.SyntaxErrorException;
 import ie.francis.lisp.scanner.Scanner;
 import ie.francis.lisp.token.Token;
@@ -22,6 +24,11 @@ public class Parser {
   }
 
   public Object parse() {
+
+    if (scanner.peek().getType() == EOF) {
+      scanner.next();
+      return null;
+    }
 
     return program();
   }
