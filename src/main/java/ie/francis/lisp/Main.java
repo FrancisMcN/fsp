@@ -12,10 +12,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 public class Main {
-  public static void main(String[] args) throws IOException {
 
+  public static void run(String[] args) throws IOException {
     Environment.put(new Symbol("nil"), null);
     Environment.put(new Symbol("apply"), new Apply());
     Environment.put(new Symbol("car"), new Car());
@@ -81,6 +88,36 @@ public class Main {
       } catch (RuntimeException exception) {
         exception.printStackTrace();
       }
+    }
+  }
+
+  public static void main(String[] args) throws IOException {
+
+    try {
+
+      CommandLineParser commandLineParser = new DefaultParser();
+      Options options = new Options();
+      Option versionOption = new Option("version", false, "print fsp version");
+      Option helpOption = new Option("help", false, "print helpful information for using the CLI");
+
+      options.addOption(helpOption);
+      options.addOption(versionOption);
+
+      CommandLine commandLine = commandLineParser.parse(options, args);
+
+      if (commandLine.hasOption("version")) {
+        System.out.printf("Lisp %s%n", Version.VERSION_STRING);
+      } else if (commandLine.hasOption("help")) {
+        HelpFormatter fmt = new HelpFormatter();
+        fmt.printHelp("-help", options);
+      } else {
+        run(args);
+      }
+
+    } catch (ParseException ex) {
+      System.err.println(ex.getMessage());
+      System.err.println("Run 'fsp -help' for usage.");
+      System.exit(1);
     }
   }
 }
