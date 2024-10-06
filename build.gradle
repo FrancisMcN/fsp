@@ -3,7 +3,7 @@ import java.time.Year
 
 plugins {
     id 'java'
-    id 'com.diffplug.spotless' version '6.18.0'
+    id 'com.diffplug.spotless' version '6.24.0'
 }
 
 group 'ie.francis'
@@ -16,9 +16,9 @@ repositories {
 dependencies {
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.5'
     implementation group: 'org.ow2.asm', name: 'asm-commons', version: '9.5'
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.9.0'
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-
 }
 
 test {
