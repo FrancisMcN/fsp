@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp;
 
 import ie.francis.lisp.exception.UndefinedSymbolException;
@@ -15,8 +15,9 @@ public class Environment {
 
   public Environment() {}
 
-  public static void put(Symbol name, Object value) {
+  public static Object put(Symbol name, Object value) {
     Environment.map.put(name, value);
+    return null;
   }
 
   public static Object get(Symbol name) {

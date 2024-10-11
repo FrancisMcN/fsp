@@ -453,16 +453,17 @@ public class Compiler {
     Symbol symbol = (Symbol) cons.getCdr().getCar();
     quoteDepth++;
     _compile(symbol);
-    stackSize--;
     quoteDepth--;
     _compile(cons.getCdr().getCdr().getCar());
-    stackSize--;
     mv.visitMethodInsn(
         INVOKESTATIC,
         "ie/francis/lisp/Environment",
         "put",
-        "(Lie/francis/lisp/type/Symbol;Ljava/lang/Object;)V",
+        "(Lie/francis/lisp/type/Symbol;Ljava/lang/Object;)Ljava/lang/Object;",
         false);
+    stackSize--;
+    stackSize--;
+    stackSize++;
   }
 
   // (let ([<a> <b>]+) form*)
