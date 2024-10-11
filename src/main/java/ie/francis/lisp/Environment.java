@@ -21,9 +21,18 @@ public class Environment {
   }
 
   public static Object get(Symbol name) {
+
+    // Check environment for symbol
     if (Environment.map.containsKey(name)) {
       return Environment.map.get(name);
     }
+    // Check if symbol represents a loaded class
+    try {
+      return Class.forName(name.getValue());
+    } catch (ClassNotFoundException ignored) {
+    }
+
+    // Throw an exception
     throw new UndefinedSymbolException(name.getValue());
   }
 

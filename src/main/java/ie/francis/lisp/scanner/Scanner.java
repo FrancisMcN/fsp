@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.scanner;
 
 import ie.francis.lisp.token.Token;
@@ -56,7 +56,7 @@ public class Scanner {
           return new Token(Type.HASH, "#", lineNo);
         case '.':
           ptr++;
-          return new Token(Type.DOT, ".", lineNo);
+          return new Token(Type.SYMBOL, ".", lineNo);
         case '"':
           ptr++;
           return stringToken();
