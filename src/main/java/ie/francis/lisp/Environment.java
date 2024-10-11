@@ -1,7 +1,7 @@
 /*
- * (c) 2024 Francis McNamee
+ * (c) 2023 Francis McNamee
  * */
- 
+
 package ie.francis.lisp;
 
 import ie.francis.lisp.exception.UndefinedSymbolException;
