@@ -15,6 +15,8 @@ import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Lambda;
 import ie.francis.lisp.type.Macro;
 import ie.francis.lisp.type.Symbol;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -36,6 +38,8 @@ public class Compiler {
 
   private boolean isMacro;
 
+  private boolean writeClassesToDisk;
+
   static LispClassLoader lispClassLoader = new LispClassLoader();
 
   public Compiler() {
@@ -44,6 +48,7 @@ public class Compiler {
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
     locals = new LocalTable();
     locals.add("this", null);
+    writeClassesToDisk = false;
   }
 
   public Compiler(boolean isMacro) {
@@ -66,6 +71,9 @@ public class Compiler {
     finish();
 
     lispClassLoader.defineClass(className, cw.toByteArray());
+    if (writeClassesToDisk) {
+      writeClassToDisk(className);
+    }
     return loadClass(className);
   }
 
@@ -102,7 +110,22 @@ public class Compiler {
     finish();
 
     lispClassLoader.defineClass(className, cw.toByteArray());
+    if (writeClassesToDisk) {
+      writeClassToDisk(className);
+    }
     return loadClass(className);
+  }
+
+  public void setWriteClassesToDisk(boolean writeClassesToDisk) {
+    this.writeClassesToDisk = writeClassesToDisk;
+  }
+
+  private void writeClassToDisk(String className) {
+    try (FileOutputStream fos = new FileOutputStream(className + ".class")) {
+      fos.write(cw.toByteArray());
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   private Object loadClass(String className) {
@@ -197,7 +220,7 @@ public class Compiler {
     return string;
   }
 
-  private Symbol compileSymbol(Symbol symbol) {
+  private Object compileSymbol(Symbol symbol) {
     if (isQuoted() && !symbol.getValue().equals("nil")) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
       mv.visitInsn(DUP);
@@ -208,8 +231,9 @@ public class Compiler {
     }
 
     if (locals.contains(symbol.getValue())) {
-      mv.visitVarInsn(ALOAD, locals.get(symbol.getValue()).getLocalId());
-      return symbol;
+      LocalTable.Local local = locals.get(symbol.getValue());
+      mv.visitVarInsn(ALOAD, local.getLocalId());
+      return local.getLocal();
     }
 
     mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
@@ -415,8 +439,34 @@ public class Compiler {
       case "do":
         compileDoSpecialForm(cons);
         break;
+      case ".":
+        compileDotSpecialForm(cons);
+        break;
     }
     return ret;
+  }
+
+  private void compileDotSpecialForm(Cons cons) {
+    Cons body = cons.getCdr();
+    Object target = _compile(body.getCar());
+    Symbol method = (Symbol) body.getCdr().getCar();
+
+    try {
+      Class clazz = target.getClass();
+      String owner = clazz.getCanonicalName().replace(".", "/");
+      String returnType =
+          "L"
+              + clazz
+                  .getMethod(method.getValue())
+                  .getReturnType()
+                  .getCanonicalName()
+                  .replace(".", "/")
+              + ";";
+      String descriptor = String.format("()%s", returnType);
+      mv.visitMethodInsn(INVOKEVIRTUAL, owner, method.toString(), descriptor, false);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void compileDoSpecialForm(Cons cons) {
@@ -517,6 +567,7 @@ public class Compiler {
         case "if":
         case "let":
         case "do":
+        case ".":
           return true;
       }
     }
