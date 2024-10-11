@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.compiler;
 
 import java.util.HashMap;
@@ -12,19 +12,19 @@ public class LocalTable {
 
   public static class Local {
     private final Integer localId;
-    private final Metadata metadata;
+    private final Object local;
 
-    public Local(Integer localId, Metadata meta) {
+    public Local(Integer localId, Object local) {
       this.localId = localId;
-      this.metadata = meta;
+      this.local = local;
     }
 
     public Integer getLocalId() {
       return localId;
     }
 
-    public Metadata getMetadata() {
-      return metadata;
+    public Object getLocal() {
+      return local;
     }
   }
 
@@ -43,13 +43,13 @@ public class LocalTable {
     this.locals.pop();
   }
 
-  public void add(String local, Metadata metadata) {
+  public void add(String local, Object value) {
     if (!this.locals.peek().containsKey(local)) {
       int frameSize = size();
-      this.locals.peek().put(local, new Local(frameSize, metadata));
+      this.locals.peek().put(local, new Local(frameSize, value));
     } else {
       Local existingLocal = this.locals.peek().get(local);
-      this.locals.peek().put(local, new Local(existingLocal.localId, metadata));
+      this.locals.peek().put(local, new Local(existingLocal.localId, value));
     }
   }
 

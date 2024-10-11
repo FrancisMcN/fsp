@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.token;
 
 public enum Type {
@@ -10,7 +10,6 @@ public enum Type {
   HASH,
   QUOTE,
   RMACRO,
-  DOT,
   SYMBOL,
   STRING,
   NUMBER,

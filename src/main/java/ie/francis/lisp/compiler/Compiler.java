@@ -10,11 +10,14 @@ import static org.objectweb.asm.Opcodes.*;
 import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
 import ie.francis.lisp.function.*;
+import ie.francis.lisp.loader.LispClassLoader;
 import ie.francis.lisp.type.Cons;
+import ie.francis.lisp.type.Lambda;
 import ie.francis.lisp.type.Macro;
 import ie.francis.lisp.type.Symbol;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.List;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -28,17 +31,17 @@ public class Compiler {
   private int quoteDepth;
 
   private String className;
-  private final List<Artifact> artifacts;
 
   private final LocalTable locals;
 
   private boolean isMacro;
 
+  static LispClassLoader lispClassLoader = new LispClassLoader();
+
   public Compiler() {
     quoteDepth = 0;
     isMacro = false;
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
-    artifacts = new ArrayList<>();
     locals = new LocalTable();
     locals.add("this", null);
   }
@@ -49,7 +52,7 @@ public class Compiler {
     className = String.format("Macro%d", new Random().nextInt(1000000000));
   }
 
-  public Metadata compile(Object object) {
+  public Object compile(Object object) {
 
     // Pre class-generation
     start();
@@ -57,17 +60,16 @@ public class Compiler {
     mv = cw.visitMethod(ACC_PUBLIC, "call", "()Ljava/lang/Object;", null, null);
     mv.visitCode();
 
-    Metadata meta = _compile(object);
+    _compile(object);
 
     // Post class-generation
     finish();
 
-    this.artifacts.add(new Artifact(className, cw.toByteArray()));
-
-    return meta;
+    lispClassLoader.defineClass(className, cw.toByteArray());
+    return loadClass(className);
   }
 
-  public Metadata compileLambdaOrMacro(Object object) {
+  public Object compileLambdaOrMacro(Object object) {
     // Pre class-generation
     start();
 
@@ -99,43 +101,49 @@ public class Compiler {
     // Post class-generation
     finish();
 
-    this.artifacts.add(new Artifact(className, cw.toByteArray()));
-    if (isMacro) {
-      return new Metadata(Metadata.Type.MACRO, className);
+    lispClassLoader.defineClass(className, cw.toByteArray());
+    return loadClass(className);
+  }
+
+  private Object loadClass(String className) {
+    try {
+      Class<?> c = lispClassLoader.loadClass(className);
+      Constructor<?> ctor = c.getConstructor();
+      return ctor.newInstance();
+    } catch (ClassNotFoundException
+        | InvocationTargetException
+        | NoSuchMethodException
+        | InstantiationException
+        | IllegalAccessException e) {
+      throw new RuntimeException(e);
     }
-    return new Metadata(Metadata.Type.LAMBDA, className);
   }
 
-  public Metadata compileLambda(Object object) {
+  public Object compileLambda(Object object) {
     return compileLambdaOrMacro(object);
   }
 
-  public Metadata compileMacro(Object object) {
+  public Object compileMacro(Object object) {
     return compileLambdaOrMacro(object);
   }
 
-  public List<Artifact> getArtifacts() {
-    return artifacts;
-  }
-
-  public Metadata _compile(Object object) {
-    Metadata meta = new Metadata(Metadata.Type.NIL, "nil");
+  public Object _compile(Object object) {
     if (object instanceof Symbol) {
-      meta = compileSymbol((Symbol) object);
+      return compileSymbol((Symbol) object);
     } else if (object instanceof String) {
-      meta = compileString((String) object);
+      return compileString((String) object);
     } else if (object instanceof Boolean) {
-      meta = compileBoolean((Boolean) object);
+      return compileBoolean((Boolean) object);
     } else if (object instanceof Integer) {
-      meta = compileNumber((Integer) object);
+      return compileNumber((Integer) object);
     } else if (object instanceof Float) {
-      meta = compileNumber((Float) object);
+      return compileNumber((Float) object);
     } else if (object instanceof Cons) {
-      meta = compileCons((Cons) object);
+      return compileCons((Cons) object);
     } else if (object == null) {
       mv.visitInsn(ACONST_NULL);
     }
-    return meta;
+    return null;
   }
 
   private void finish() {
@@ -164,45 +172,44 @@ public class Compiler {
     mv.visitEnd();
   }
 
-  private Metadata compileNumber(Integer integer) {
+  private Integer compileNumber(Integer integer) {
     mv.visitLdcInsn(integer);
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
-    return new Metadata(Metadata.Type.INTEGER, integer.toString());
+    return integer;
   }
 
-  private Metadata compileNumber(Float floating) {
+  private Float compileNumber(Float floating) {
     mv.visitLdcInsn(floating);
     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
-    return new Metadata(Metadata.Type.FLOAT, floating.toString());
+    return floating;
   }
 
-  private Metadata compileBoolean(Boolean bool) {
+  private Boolean compileBoolean(Boolean bool) {
     mv.visitLdcInsn(bool);
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
-    return new Metadata(Metadata.Type.BOOLEAN, bool.toString());
+    return bool;
   }
 
-  private Metadata compileString(String string) {
+  private String compileString(String string) {
     mv.visitLdcInsn(string);
-    return new Metadata(Metadata.Type.STRING, string);
+    return string;
   }
 
-  private Metadata compileSymbol(Symbol symbol) {
-    Metadata meta = new Metadata(Metadata.Type.SYMBOL, symbol.getValue());
+  private Symbol compileSymbol(Symbol symbol) {
     if (isQuoted() && !symbol.getValue().equals("nil")) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
       mv.visitInsn(DUP);
       mv.visitLdcInsn(symbol.getValue());
       mv.visitMethodInsn(
           INVOKESPECIAL, "ie/francis/lisp/type/Symbol", "<init>", "(Ljava/lang/String;)V", false);
-      return meta;
+      return symbol;
     }
 
     if (locals.contains(symbol.getValue())) {
       mv.visitVarInsn(ALOAD, locals.get(symbol.getValue()).getLocalId());
-      return meta;
+      return symbol;
     }
 
     mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
@@ -217,14 +224,13 @@ public class Compiler {
         "(Lie/francis/lisp/type/Symbol;)Ljava/lang/Object;",
         false);
 
-    return meta;
+    return symbol;
   }
 
-  private Metadata compileCons(Cons cons) {
-    Metadata meta = new Metadata(Metadata.Type.CONS, cons.toString());
+  private Object compileCons(Cons cons) {
     if (isQuoted()) {
       compileConsWithoutEvaluating(cons);
-      return meta;
+      return cons;
     }
 
     Object first = cons.getCar();
@@ -233,14 +239,14 @@ public class Compiler {
     }
 
     if (first instanceof Cons) {
-      Metadata metadata = _compile(first);
-      if (metadata.getType() == Metadata.Type.LAMBDA) {
+      Object compiled = _compile(first);
+      if (compiled instanceof Lambda) {
         mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
         mv.visitInsn(DUP);
         mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/function/Apply", "<init>", "()V", false);
         compileLambdaCall(cons);
       }
-      return meta;
+      return cons;
     }
     if (first instanceof Symbol) {
       Symbol symbol = (Symbol) first;
@@ -252,7 +258,7 @@ public class Compiler {
       } else {
         compileLambdaCall(cons);
       }
-      return meta;
+      return cons;
     }
 
     throw new InvalidConsException("expected a function in first cons cell");
@@ -370,30 +376,28 @@ public class Compiler {
     }
   }
 
-  private Metadata compileSpecialForm(Cons cons) {
-    Metadata meta = new Metadata(Metadata.Type.NIL, "nil");
+  private Object compileSpecialForm(Cons cons) {
+    Object ret = null;
     Symbol symbol = (Symbol) cons.getCar();
     switch (symbol.getValue()) {
       case "lambda":
         {
           Compiler compiler = new Compiler();
-          meta = compiler.compileLambda(cons);
-          String lambda = compiler.artifacts.get(compiler.artifacts.size() - 1).getName();
-          mv.visitTypeInsn(Opcodes.NEW, lambda);
+          ret = compiler.compileLambda(cons);
+          Lambda lambda = (Lambda) ret;
+          mv.visitTypeInsn(Opcodes.NEW, lambda.getClass().getName());
           mv.visitInsn(DUP);
-          mv.visitMethodInsn(INVOKESPECIAL, lambda, "<init>", "()V", false);
-          this.artifacts.addAll(compiler.artifacts);
+          mv.visitMethodInsn(INVOKESPECIAL, lambda.getClass().getName(), "<init>", "()V", false);
           break;
         }
       case "macro":
         {
           Compiler compiler = new Compiler(true);
-          meta = compiler.compileMacro(cons);
-          String macro = compiler.artifacts.get(compiler.artifacts.size() - 1).getName();
-          mv.visitTypeInsn(Opcodes.NEW, macro);
+          ret = compiler.compileMacro(cons);
+          Macro macro = (Macro) ret;
+          mv.visitTypeInsn(Opcodes.NEW, macro.getClass().getName());
           mv.visitInsn(DUP);
-          mv.visitMethodInsn(INVOKESPECIAL, macro, "<init>", "()V", false);
-          this.artifacts.addAll(compiler.artifacts);
+          mv.visitMethodInsn(INVOKESPECIAL, macro.getClass().getName(), "<init>", "()V", false);
           break;
         }
       case "quote":
@@ -412,7 +416,7 @@ public class Compiler {
         compileDoSpecialForm(cons);
         break;
     }
-    return meta;
+    return ret;
   }
 
   private void compileDoSpecialForm(Cons cons) {
@@ -448,8 +452,8 @@ public class Compiler {
     while (assignments != null) {
       Symbol symbol = (Symbol) assignments.getCar();
       Object value = assignments.getCdr().getCar();
-      Metadata metadata = _compile(value);
-      locals.add(symbol.getValue(), metadata);
+      Object local = _compile(value);
+      locals.add(symbol.getValue(), local);
       mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()).getLocalId());
       // Move to next assignment if there is one
       assignments = assignments.getCdr().getCdr();

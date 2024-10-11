@@ -167,4 +167,14 @@ class ParserTest {
         assertEquals(3.14f, ((Cons) expr).getCar());
     }
 
+    @Test
+    void testParseDotExpression() throws SyntaxErrorException {
+        Scanner scanner = new Scanner("(. x toUpperCase)");
+        parser = new Parser(scanner);
+        Object expr = parser.parse();
+        assertEquals(new Symbol("."), ((Cons) expr).getCar());
+        assertEquals(new Symbol("x"), ((Cons) expr).getCdr().getCar());
+        assertEquals(new Symbol("toUpperCase"), ((Cons) expr).getCdr().getCdr().getCar());
+    }
+
 }

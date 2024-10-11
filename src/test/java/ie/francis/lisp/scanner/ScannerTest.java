@@ -38,7 +38,7 @@ public class ScannerTest {
 
         assertEquals(new Token(Type.LPAREN, "(", 1), scanner.next());
         assertEquals(new Token(Type.RPAREN, ")", 1), scanner.next());
-        assertEquals(new Token(Type.DOT, ".", 1), scanner.next());
+        assertEquals(new Token(Type.SYMBOL, ".", 1), scanner.next());
         assertEquals(new Token(Type.STRING, "hello", 1), scanner.next());
         assertEquals(new Token(Type.NUMBER, "123", 1), scanner.next());
         assertEquals(new Token(Type.BOOLEAN, "true", 1), scanner.next());

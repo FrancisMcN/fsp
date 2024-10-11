@@ -1,7 +1,7 @@
 /*
- * (c) 2023 Francis McNamee
+ * (c) 2024 Francis McNamee
  * */
-
+ 
 package ie.francis.lisp.function;
 
 import ie.francis.lisp.compiler.Compiler;
@@ -12,7 +12,6 @@ public class Compile extends BaseLambda implements Lambda {
   @Override
   public Object call(Object arg) {
     Compiler compiler = new Compiler();
-    compiler.compile(arg);
-    return compiler.getArtifacts();
+    return compiler.compile(arg);
   }
 }
