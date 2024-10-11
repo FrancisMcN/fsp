@@ -32,7 +32,6 @@ public class Compiler {
 
   private final LocalTable locals;
 
-
   private boolean isMacro;
 
   public Compiler() {
@@ -452,7 +451,7 @@ public class Compiler {
       Metadata metadata = _compile(value);
       locals.add(symbol.getValue(), metadata);
       mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()).getLocalId());
-            // Move to next assignment if there is one
+      // Move to next assignment if there is one
       assignments = assignments.getCdr().getCdr();
     }
 

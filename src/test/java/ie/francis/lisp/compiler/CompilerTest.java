@@ -237,11 +237,8 @@ public class CompilerTest {
 
     @Test
     void testExprAssignmentToSymbolSucceeds() {
-        eval("123");
-        eval("()");
-        eval("(def x 1)");
         eval("(def x (+ 1 2 3))");
-//        assertEquals(eval("x"), 3);
+        assertEquals(eval("x"), 6);
     }
 
     Object eval(String input) {
