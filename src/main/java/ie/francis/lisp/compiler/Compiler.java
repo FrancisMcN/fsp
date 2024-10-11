@@ -32,13 +32,10 @@ public class Compiler {
 
   private final LocalTable locals;
 
-  private int stackSize;
-
   private boolean isMacro;
 
   public Compiler() {
     quoteDepth = 0;
-    stackSize = 0;
     isMacro = false;
     className = String.format("Lambda%d", new Random().nextInt(1000000000));
     artifacts = new ArrayList<>();
@@ -142,9 +139,6 @@ public class Compiler {
   }
 
   private void finish() {
-    if (stackSize == 0) {
-      mv.visitInsn(ACONST_NULL);
-    }
     mv.visitInsn(ARETURN);
     mv.visitMaxs(0, 0);
     mv.visitEnd();
@@ -172,7 +166,6 @@ public class Compiler {
 
   private Metadata compileNumber(Integer integer) {
     mv.visitLdcInsn(integer);
-    stackSize++;
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
     return new Metadata(Metadata.Type.INTEGER, integer.toString());
@@ -180,14 +173,12 @@ public class Compiler {
 
   private Metadata compileNumber(Float floating) {
     mv.visitLdcInsn(floating);
-    stackSize++;
     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
     return new Metadata(Metadata.Type.FLOAT, floating.toString());
   }
 
   private Metadata compileBoolean(Boolean bool) {
     mv.visitLdcInsn(bool);
-    stackSize++;
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
     return new Metadata(Metadata.Type.BOOLEAN, bool.toString());
@@ -195,13 +186,11 @@ public class Compiler {
 
   private Metadata compileString(String string) {
     mv.visitLdcInsn(string);
-    stackSize++;
     return new Metadata(Metadata.Type.STRING, string);
   }
 
   private Metadata compileSymbol(Symbol symbol) {
     Metadata meta = new Metadata(Metadata.Type.SYMBOL, symbol.getValue());
-    stackSize++;
     if (isQuoted() && !symbol.getValue().equals("nil")) {
       mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/type/Symbol");
       mv.visitInsn(DUP);
@@ -292,7 +281,6 @@ public class Compiler {
     }
     String descriptor = "(" + "Ljava/lang/Object;".repeat(size) + ")Ljava/lang/Object;";
 
-    stackSize += size;
     if (cons != null) {
       _compile(cons.getCar());
     }
@@ -307,12 +295,9 @@ public class Compiler {
     if (!evaluateArgs) {
       quoteDepth--;
     }
-    if (size != 0) {
-      stackSize--;
-    }
+
     mv.visitMethodInsn(
         INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
-    stackSize++;
   }
 
   private void compileVariadicCall(Cons cons, boolean evaluateArgs) {
@@ -321,7 +306,6 @@ public class Compiler {
       size = cons.size();
     }
     String descriptor = "([Ljava/lang/Object;)Ljava/lang/Object;";
-    stackSize += size;
 
     mv.visitLdcInsn(size);
     mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
@@ -353,12 +337,8 @@ public class Compiler {
     if (!evaluateArgs) {
       quoteDepth--;
     }
-    if (size != 0) {
-      stackSize--;
-    }
     mv.visitMethodInsn(
         INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
-    stackSize++;
   }
 
   private void compileConsWithoutEvaluating(Cons cons) {
@@ -369,27 +349,23 @@ public class Compiler {
       mv.visitInsn(DUP);
       mv.visitMethodInsn(INVOKESPECIAL, "ie/francis/lisp/type/Cons", "<init>", "()V", false);
       _compile(cons.getCar());
-      stackSize--;
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
           "ie/francis/lisp/type/Cons",
           "setCar",
           "(Ljava/lang/Object;)Lie/francis/lisp/type/Cons;",
           false);
-      stackSize++;
       cons = cons.getCdr();
     }
 
     cons = head.getCdr();
     while (cons != null) {
-      stackSize--;
       mv.visitMethodInsn(
           INVOKEVIRTUAL,
           "ie/francis/lisp/type/Cons",
           "setCdr",
           "(Lie/francis/lisp/type/Cons;)Lie/francis/lisp/type/Cons;",
           false);
-      stackSize++;
       cons = cons.getCdr();
     }
   }
@@ -407,7 +383,6 @@ public class Compiler {
           mv.visitInsn(DUP);
           mv.visitMethodInsn(INVOKESPECIAL, lambda, "<init>", "()V", false);
           this.artifacts.addAll(compiler.artifacts);
-          stackSize++;
           break;
         }
       case "macro":
@@ -419,7 +394,6 @@ public class Compiler {
           mv.visitInsn(DUP);
           mv.visitMethodInsn(INVOKESPECIAL, macro, "<init>", "()V", false);
           this.artifacts.addAll(compiler.artifacts);
-          stackSize++;
           break;
         }
       case "quote":
@@ -453,15 +427,13 @@ public class Compiler {
     Symbol symbol = (Symbol) cons.getCdr().getCar();
     quoteDepth++;
     _compile(symbol);
-    stackSize--;
     quoteDepth--;
     _compile(cons.getCdr().getCdr().getCar());
-    stackSize--;
     mv.visitMethodInsn(
         INVOKESTATIC,
         "ie/francis/lisp/Environment",
         "put",
-        "(Lie/francis/lisp/type/Symbol;Ljava/lang/Object;)V",
+        "(Lie/francis/lisp/type/Symbol;Ljava/lang/Object;)Ljava/lang/Object;",
         false);
   }
 
@@ -479,7 +451,6 @@ public class Compiler {
       Metadata metadata = _compile(value);
       locals.add(symbol.getValue(), metadata);
       mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()).getLocalId());
-      stackSize--;
       // Move to next assignment if there is one
       assignments = assignments.getCdr().getCdr();
     }

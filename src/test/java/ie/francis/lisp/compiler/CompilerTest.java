@@ -235,6 +235,12 @@ public class CompilerTest {
         assertEquals(5, output);
     }
 
+    @Test
+    void testExprAssignmentToSymbolSucceeds() {
+        eval("(def x (+ 1 2 3))");
+        assertEquals(eval("x"), 6);
+    }
+
     Object eval(String input) {
         Read reader = new Read();
         Eval eval = new Eval();
