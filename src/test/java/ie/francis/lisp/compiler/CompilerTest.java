@@ -188,6 +188,18 @@ public class CompilerTest {
     }
 
     @Test
+    void testInlineLambdaIsExecutedSuccessfully() {
+        Object output = eval("((lambda (x) (+ x 1)) 5)");
+        assertEquals(6, output);
+    }
+
+    @Test
+    void testInlineCompileIsExecutedSuccessfully() {
+        Object output = eval("((compile 5))");
+        assertEquals(5, output);
+    }
+
+    @Test
     void testEmptyListisNull() {
         Object output = eval("()");
         assertNull(output);
