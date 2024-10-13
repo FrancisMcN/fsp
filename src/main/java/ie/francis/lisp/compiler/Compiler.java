@@ -263,6 +263,7 @@ public class Compiler {
     }
 
     if (first instanceof Cons) {
+      System.out.println(first);
       Object compiled = _compile(first);
       if (compiled instanceof Lambda) {
         mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
@@ -282,7 +283,7 @@ public class Compiler {
       } else {
         compileLambdaCall(cons);
       }
-      return cons;
+      return Environment.get(symbol);
     }
 
     throw new InvalidConsException("expected a function in first cons cell");
