@@ -263,6 +263,11 @@ public class CompilerTest {
         assertEquals("WORLD", eval("(do (let (x \"world\") (. x toUpperCase)))"));
     }
 
+    @Test
+    void testDotSpecialFormWithGlobalSymbol() {
+        assertEquals("HELLO WORLD", eval("(do (def x \"hello world\") (. x toUpperCase))"));
+    }
+
     Object eval(String input) {
         Read reader = new Read();
         Eval eval = new Eval();
