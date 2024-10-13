@@ -263,7 +263,6 @@ public class Compiler {
     }
 
     if (first instanceof Cons) {
-      System.out.println(first);
       Object compiled = _compile(first);
       if (compiled instanceof Lambda) {
         mv.visitTypeInsn(Opcodes.NEW, "ie/francis/lisp/function/Apply");
@@ -450,6 +449,9 @@ public class Compiler {
   private void compileDotSpecialForm(Cons cons) {
     Cons body = cons.getCdr();
     Object target = _compile(body.getCar());
+    if (target instanceof Symbol) {
+      target = Environment.get((Symbol) target);
+    }
     Symbol method = (Symbol) body.getCdr().getCar();
 
     try {
@@ -464,6 +466,7 @@ public class Compiler {
                   .replace(".", "/")
               + ";";
       String descriptor = String.format("()%s", returnType);
+      mv.visitTypeInsn(CHECKCAST, owner);
       mv.visitMethodInsn(INVOKEVIRTUAL, owner, method.toString(), descriptor, false);
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(e);
@@ -481,15 +484,16 @@ public class Compiler {
   private void compileDefSpecialForm(Cons cons) {
     Symbol symbol = (Symbol) cons.getCdr().getCar();
     quoteDepth++;
-    _compile(symbol);
+    Object name = _compile(symbol);
     quoteDepth--;
-    _compile(cons.getCdr().getCdr().getCar());
+    Object value = _compile(cons.getCdr().getCdr().getCar());
     mv.visitMethodInsn(
         INVOKESTATIC,
         "ie/francis/lisp/Environment",
         "put",
         "(Lie/francis/lisp/type/Symbol;Ljava/lang/Object;)Ljava/lang/Object;",
         false);
+    Environment.put((Symbol) name, value);
   }
 
   // (let ([<a> <b>]+) form*)
