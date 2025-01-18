@@ -1,5 +1,5 @@
 /*
- * (c) 2024 Francis McNamee
+ * (c) 2025 Francis McNamee
  * */
  
 package ie.francis.lisp.compiler;
@@ -19,11 +19,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 public class Compiler {
 
@@ -454,23 +456,31 @@ public class Compiler {
     }
     Symbol method = (Symbol) body.getCdr().getCar();
 
-    try {
-      Class clazz = target.getClass();
-      String owner = clazz.getCanonicalName().replace(".", "/");
-      String returnType =
-          "L"
-              + clazz
-                  .getMethod(method.getValue())
-                  .getReturnType()
-                  .getCanonicalName()
-                  .replace(".", "/")
-              + ";";
-      String descriptor = String.format("()%s", returnType);
-      mv.visitTypeInsn(CHECKCAST, owner);
-      mv.visitMethodInsn(INVOKEVIRTUAL, owner, method.toString(), descriptor, false);
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
+    Cons arg = body.getCdr().getCdr();
+    int argsSize = 0;
+    if (arg != null) {
+      argsSize = arg.size();
     }
+
+    Method methodToCall = findMethod(target.getClass(), method.getValue(), argsSize);
+    String owner = methodToCall.getDeclaringClass().getCanonicalName().replace(".", "/");
+    String descriptor = Type.getMethodDescriptor(methodToCall);
+    for (int i = 0; i < argsSize; i++) {
+      _compile(arg.getCar());
+      arg = arg.getCdr();
+    }
+
+    mv.visitTypeInsn(CHECKCAST, owner);
+    mv.visitMethodInsn(INVOKEVIRTUAL, owner, methodToCall.getName(), descriptor, false);
+  }
+
+  private Method findMethod(Class<?> clazz, String name, int argCount) {
+    for (Method method : clazz.getMethods()) {
+      if (method.getName().equalsIgnoreCase(name) && method.getParameters().length == argCount) {
+        return method;
+      }
+    }
+    throw new RuntimeException(String.format("method '%s' not found", name));
   }
 
   private void compileDoSpecialForm(Cons cons) {
