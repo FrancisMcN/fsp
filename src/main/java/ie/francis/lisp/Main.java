@@ -1,5 +1,5 @@
 /*
- * (c) 2024 Francis McNamee
+ * (c) 2025 Francis McNamee
  * */
  
 package ie.francis.lisp;
@@ -41,7 +41,7 @@ public class Main {
     Environment.put(new Symbol("<"), new LessThan());
     Environment.put(new Symbol(">"), new GreaterThan());
 
-    if (args.length > 0) {
+    if (args.length > 0 && !args[0].startsWith("-")) {
       String filename = args[0];
       String input = Files.readString(Path.of(filename));
       Read reader = new Read();
@@ -99,11 +99,18 @@ public class Main {
       Options options = new Options();
       Option versionOption = new Option("version", false, "print fsp version");
       Option helpOption = new Option("help", false, "print helpful information for using the CLI");
+      Option debugOption =
+          new Option("debug", false, "write generated class files to disk to aid debugging");
 
       options.addOption(helpOption);
+      options.addOption(debugOption);
       options.addOption(versionOption);
 
       CommandLine commandLine = commandLineParser.parse(options, args);
+
+      if (commandLine.hasOption("debug")) {
+        Compile.writeToDisk = true;
+      }
 
       if (commandLine.hasOption("version")) {
         System.out.printf("Lisp %s%n", Version.VERSION_STRING);
