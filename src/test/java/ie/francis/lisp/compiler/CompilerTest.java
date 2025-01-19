@@ -282,6 +282,37 @@ public class CompilerTest {
         assertEquals("HELLO WORLD", eval("(do (def x \"hello world\") (. x toUpperCase))"));
     }
 
+    @Test
+    void testDotSpecialFormWithNesting() {
+        assertEquals(true, eval("(do (def x \"hello world\") (. (. x toUpperCase) startsWith \"HELLO\"))"));
+    }
+
+    @Test
+    void testDotSpecialFormReturnsInteger() {
+        assertEquals(11, eval("(. \"hello world\" length)"));
+    }
+
+    @Test
+    void testDotSpecialFormWithFunctionArguments() {
+        assertEquals("ll", eval("(. \"hello world\" substring 2 4)"));
+    }
+
+    @Test
+    void testDotSpecialFormCanReturnPrimitiveType() {
+        assertEquals(false, eval("(. \"hello world\" startsWith \"francis\")"));
+    }
+
+    @Test
+    void testDotSpecialFormCanBeQuoted() {
+        Object output = eval("'(. \"francis\" toUpperCase)");
+        assertEquals("(. francis toUpperCase)", String.format("%s", output));
+    }
+
+    @Test
+    void testDotSpecialFormOnFloatingPointType() {
+        assertEquals(1, eval("(. 1.23 intValue)"));
+    }
+
     Object eval(String input) {
         Read reader = new Read();
         Eval eval = new Eval();
