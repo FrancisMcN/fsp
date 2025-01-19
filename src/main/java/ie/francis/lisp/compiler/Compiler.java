@@ -19,13 +19,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 public class Compiler {
 
@@ -333,11 +331,17 @@ public class Compiler {
   }
 
   private void compileVariadicCall(Cons cons, boolean evaluateArgs) {
+    compileVariadicArgs(cons, evaluateArgs);
+    String descriptor = "([Ljava/lang/Object;)Ljava/lang/Object;";
+    mv.visitMethodInsn(
+        INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
+  }
+
+  private void compileVariadicArgs(Cons cons, boolean evaluateArgs) {
     int size = 0;
     if (cons != null) {
       size = cons.size();
     }
-    String descriptor = "([Ljava/lang/Object;)Ljava/lang/Object;";
 
     mv.visitLdcInsn(size);
     mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
@@ -369,8 +373,6 @@ public class Compiler {
     if (!evaluateArgs) {
       quoteDepth--;
     }
-    mv.visitMethodInsn(
-        INVOKEVIRTUAL, Apply.class.getName().replace(".", "/"), "call", descriptor, false);
   }
 
   private void compileConsWithoutEvaluating(Cons cons) {
@@ -450,37 +452,21 @@ public class Compiler {
 
   private void compileDotSpecialForm(Cons cons) {
     Cons body = cons.getCdr();
-    Object target = _compile(body.getCar());
-    if (target instanceof Symbol) {
-      target = Environment.get((Symbol) target);
-    }
+    _compile(body.getCar());
+
     Symbol method = (Symbol) body.getCdr().getCar();
+    mv.visitLdcInsn(method.getValue());
 
-    Cons arg = body.getCdr().getCdr();
-    int argsSize = 0;
-    if (arg != null) {
-      argsSize = arg.size();
+    Cons args = body.getCdr().getCdr();
+
+    String descriptor = "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;";
+    if (args != null) {
+      compileVariadicArgs(args, true);
+      descriptor = "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;";
     }
 
-    Method methodToCall = findMethod(target.getClass(), method.getValue(), argsSize);
-    String owner = methodToCall.getDeclaringClass().getCanonicalName().replace(".", "/");
-    String descriptor = Type.getMethodDescriptor(methodToCall);
-    for (int i = 0; i < argsSize; i++) {
-      _compile(arg.getCar());
-      arg = arg.getCdr();
-    }
-
-    mv.visitTypeInsn(CHECKCAST, owner);
-    mv.visitMethodInsn(INVOKEVIRTUAL, owner, methodToCall.getName(), descriptor, false);
-  }
-
-  private Method findMethod(Class<?> clazz, String name, int argCount) {
-    for (Method method : clazz.getMethods()) {
-      if (method.getName().equalsIgnoreCase(name) && method.getParameters().length == argCount) {
-        return method;
-      }
-    }
-    throw new RuntimeException(String.format("method '%s' not found", name));
+    mv.visitMethodInsn(
+        INVOKESTATIC, "ie/francis/lisp/reflect/Reflector", "invoke", descriptor, false);
   }
 
   private void compileDoSpecialForm(Cons cons) {
