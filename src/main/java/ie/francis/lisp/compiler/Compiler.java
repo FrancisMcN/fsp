@@ -282,7 +282,10 @@ public class Compiler {
       } else {
         compileLambdaCall(cons);
       }
-      return Environment.get(symbol);
+      if (Environment.contains(symbol)) {
+        return Environment.get(symbol);
+      }
+      return null;
     }
 
     throw new InvalidConsException("expected a function in first cons cell");
