@@ -1,0 +1,19 @@
+;; Interfacing with Java using the . special form
+
+;; String manipulation to capitalise a string
+(func capitalise (str)
+	(. (. (. str toUpperCase) substring 0 1) concat 
+	(. str substring 1)))
+
+;; A wrapper method around Java's hashcode method. Useful 
+;; for comparing objects efficiently
+(func hashcode (obj) 
+	(. obj hashCode))
+
+;; Using Java's equalsIgnoreCase to implement case-insensitive string equality
+(func == (s1 s2)
+	(. s1 equalsIgnoreCase s2))
+
+(print (capitalise "francis"))
+(print (hashcode "francis"))
+(print (== "francis" "FRANCIS"))

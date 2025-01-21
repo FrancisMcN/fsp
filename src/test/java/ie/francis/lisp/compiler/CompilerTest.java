@@ -2,6 +2,7 @@ package ie.francis.lisp.compiler;
 
 import ie.francis.lisp.Buffer;
 import ie.francis.lisp.Environment;
+import ie.francis.lisp.exception.UndefinedSymbolException;
 import ie.francis.lisp.function.Apply;
 import ie.francis.lisp.function.Car;
 import ie.francis.lisp.function.Cdr;
@@ -132,6 +133,25 @@ public class CompilerTest {
     void testQuoteOfLambdaExpression() {
         Object lambda = eval("'(lambda (x y) (+ x y))");
         assertEquals("(lambda (x y) (+ x y))", String.format("%s", lambda));
+    }
+
+    @Test
+    void testSymbolsAreNotResolvedUntilRuntime() {
+        assertNull(eval("(func hello () (non-existant-function 1 2 3))"));
+    }
+
+    @Test
+    void testUndefinedSymbolThrowsException() {
+        assertThrows(UndefinedSymbolException.class, () -> {
+            eval("my-undefined-symbol");
+        });
+    }
+
+    @Test
+    void testUndefinedSymbolInConsCellThrowsException() {
+        assertThrows(UndefinedSymbolException.class, () -> {
+            eval("(non-existent-function 1 2 3 4)");
+        });
     }
 
     @Test
