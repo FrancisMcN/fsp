@@ -24,6 +24,8 @@ import ie.francis.lisp.type.Symbol;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CompilerTest {
@@ -50,6 +52,12 @@ public class CompilerTest {
     void testBuiltinPlus() {
         Object output = eval("(+ 1 2 3)");
         assertEquals(6, output);
+    }
+
+    @Test
+    void testIntegerOverflowsToBigInt() {
+        Object output = eval("2147483648");
+        assertEquals(new BigInteger("2147483648"), output);
     }
 
     @Test

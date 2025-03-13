@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ParserTest {
@@ -18,12 +20,6 @@ class ParserTest {
     void setUp() {
         Scanner scanner = new Scanner("");
         parser = new Parser(scanner);
-    }
-
-    @Test
-    void parseEmptyInputReturnsEmptyList() throws SyntaxErrorException {
-//        Object exprs = parser.parse();
-//        assertTrue(exprs.isEmpty());
     }
 
     @Test
@@ -175,6 +171,20 @@ class ParserTest {
         assertEquals(new Symbol("."), ((Cons) expr).getCar());
         assertEquals(new Symbol("x"), ((Cons) expr).getCdr().getCar());
         assertEquals(new Symbol("toUpperCase"), ((Cons) expr).getCdr().getCdr().getCar());
+    }
+
+    @Test
+    void testLiteralNumberBecomesInt() {
+        Scanner scanner = new Scanner("2147483647");
+        parser = new Parser(scanner);
+        assertEquals(2147483647, parser.parse());
+    }
+
+    @Test
+    void testLiteralNumberOverflowsIntoBigInt() {
+        Scanner scanner = new Scanner("2147483648");
+        parser = new Parser(scanner);
+        assertEquals(new BigInteger("2147483648"), parser.parse());
     }
 
 }

@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigInteger;
 import java.util.*;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -159,6 +160,8 @@ public class Compiler {
       return compileBoolean((Boolean) object);
     } else if (object instanceof Integer) {
       return compileNumber((Integer) object);
+    } else if (object instanceof BigInteger) {
+      return compileNumber((BigInteger) object);
     } else if (object instanceof Float) {
       return compileNumber((Float) object);
     } else if (object instanceof Cons) {
@@ -199,6 +202,16 @@ public class Compiler {
     mv.visitLdcInsn(integer);
     mv.visitMethodInsn(
         INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+    return integer;
+  }
+
+  private BigInteger compileNumber(BigInteger integer) {
+
+    mv.visitTypeInsn(Opcodes.NEW, "java/math/BigInteger");
+    mv.visitInsn(DUP);
+    mv.visitLdcInsn(integer.toString());
+    mv.visitMethodInsn(
+        INVOKESPECIAL, "java/math/BigInteger", "<init>", "(Ljava/lang/String;)V", false);
     return integer;
   }
 
