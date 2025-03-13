@@ -1,5 +1,5 @@
 /*
- * (c) 2024 Francis McNamee
+ * (c) 2025 Francis McNamee
  * */
  
 package ie.francis.lisp.parser;
@@ -12,6 +12,7 @@ import ie.francis.lisp.token.Token;
 import ie.francis.lisp.token.Type;
 import ie.francis.lisp.type.Cons;
 import ie.francis.lisp.type.Symbol;
+import java.math.BigInteger;
 
 public class Parser {
 
@@ -60,7 +61,11 @@ public class Parser {
           if (tokenValue.contains(".")) {
             return Float.parseFloat(tokenValue);
           }
-          return Integer.parseInt(tokenValue);
+          try {
+            return Integer.parseInt(tokenValue);
+          } catch (NumberFormatException ex) {
+            return new BigInteger(tokenValue);
+          }
         }
       case QUOTE:
         {
