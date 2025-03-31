@@ -10,7 +10,7 @@ group 'ie.francis'
 version '0.0.4-alpha'
 
 repositories {
-    mavenCentral()
+    mavenCentral()§
 }
 
 dependencies {
