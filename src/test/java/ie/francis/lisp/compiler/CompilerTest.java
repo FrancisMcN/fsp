@@ -278,6 +278,24 @@ public class CompilerTest {
     }
 
     @Test
+    void testDoSpecialFormInsideIfSpecialForm() {
+        Object output = eval("(if (= 1 1) (do 1 2 3 4 5))");
+        assertEquals(5, output);
+    }
+
+    @Test
+    void testDoSpecialFormInsideElseBlock() {
+        Object output = eval("(if (= 1 2) 'incorrect (do 1 2 3 4 5))");
+        assertEquals(5, output);
+    }
+
+    @Test
+    void testIfSpecialFormInsideDoBlock() {
+        Object output = eval("(if (= 0 1) (do 1 2) (do 3 4))");
+        assertEquals(4, output);
+    }
+
+    @Test
     void testDoSpecialFormWithMultipleArguments() {
         Object output = eval("(do 1 2 3 4 5 6 7 8 9)");
         assertEquals(9, output);

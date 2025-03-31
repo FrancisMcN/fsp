@@ -490,6 +490,9 @@ public class Compiler {
     while (body != null) {
       _compile(body.getCar());
       body = body.getCdr();
+      if (body != null) {
+        mv.visitInsn(POP);
+      }
     }
   }
 
