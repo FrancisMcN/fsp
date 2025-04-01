@@ -491,6 +491,9 @@ public class Compiler {
 
   private void compileDoSpecialForm(Cons cons) {
     Cons body = cons.getCdr();
+    if (body == null) {
+      mv.visitInsn(ACONST_NULL);
+    }
     while (body != null) {
       _compile(body.getCar());
       body = body.getCdr();
@@ -548,18 +551,19 @@ public class Compiler {
 
   private void compileSetSpecialForm(Cons cons) {
 
-    Cons assignments = cons.getCdr();
-    while (assignments != null) {
-      Symbol symbol = (Symbol) assignments.getCar();
-      Object value = assignments.getCdr().getCar();
+    Cons body = cons.getCdr();
+    while (body != null) {
+      Symbol symbol = (Symbol) body.getCar();
+      Object value = body.getCdr().getCar();
       Object local = _compile(value);
       if (!locals.contains(symbol.getValue())) {
         throw new UndefinedSymbolException(symbol.getValue());
       }
       locals.add(symbol.getValue(), local);
       mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()).getLocalId());
-      assignments = assignments.getCdr().getCdr();
+      body = body.getCdr().getCdr();
     }
+    mv.visitInsn(ACONST_NULL);
   }
 
   private void compileIfSpecialForm(Cons cons) {

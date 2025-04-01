@@ -349,6 +349,23 @@ public class CompilerTest {
     }
 
     @Test
+    void testSetSpecialFormReturnsNil() {
+        assertNull(eval("(let (a 1) (set a 2))"));
+    }
+
+    @Test
+    void testSetOfUndefinedLocalThrowsException() {
+        assertThrows(UndefinedSymbolException.class, () -> {
+            eval("(set undefined-symbol \"hello world\")");
+        });
+    }
+
+    @Test
+    void testEmptyDoSpecialFormReturnsNil() {
+        assertNull(eval("(do)"));
+    }
+
+    @Test
     void testDotSpecialFormWithGlobalSymbol() {
         assertEquals("HELLO WORLD", eval("(do (def x \"hello world\") (. x toUpperCase))"));
     }
