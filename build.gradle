@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'ie.francis'
-version '0.0.5-alpha'
+version '0.0.6-alpha'
 
 repositories {
     mavenCentral()
@@ -31,7 +31,7 @@ jar {
 
     manifest {
         attributes(
-                'Main-Class': 'ie.francis.lisp.Main'
+                'Main-Class': 'fsp.lang.Main'
         )
     }
     from {
@@ -50,13 +50,13 @@ def gitBranch() {
 
 compileJava {
     doFirst {
-        File f = new File("${project.layout.buildDirectory.get()}/generated-src/main/java/ie/francis/lisp/Version.java")
+        File f = new File("${project.layout.buildDirectory.get()}/generated-src/main/java/fsp/lang/Version.java")
         f.text = f.text.replace("@VERSION_STRING@", "$version (${gitBranch()}, ${new SimpleDateFormat("dd MMM yyyy, HH:mm:ss").format(new Date())})")
     }
     doFirst {
         copy {
             from "src/main/java/ie/francis/lisp/Version.java.tmpl"
-            into "${project.layout.buildDirectory.get()}/generated-src/main/java/ie/francis/lisp"
+            into "${project.layout.buildDirectory.get()}/generated-src/main/java/fsp/lang"
             rename("Version.java.tmpl", "Version.java")
         }
     }
