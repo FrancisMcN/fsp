@@ -55,7 +55,7 @@ compileJava {
     }
     doFirst {
         copy {
-            from "src/main/java/ie/francis/lisp/Version.java.tmpl"
+            from "src/main/java/fsp/lang/Version.java.tmpl"
             into "${project.layout.buildDirectory.get()}/generated-src/main/java/fsp/lang"
             rename("Version.java.tmpl", "Version.java")
         }
