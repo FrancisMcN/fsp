@@ -9,6 +9,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import ie.francis.lisp.Environment;
 import ie.francis.lisp.exception.InvalidConsException;
+import ie.francis.lisp.exception.UndefinedSymbolException;
 import ie.francis.lisp.function.*;
 import ie.francis.lisp.loader.LispClassLoader;
 import ie.francis.lisp.type.Cons;
@@ -453,6 +454,9 @@ public class Compiler {
       case "let":
         compileLetSpecialForm(cons);
         break;
+      case "set":
+        compileSetSpecialForm(cons);
+        break;
       case "def":
         compileDefSpecialForm(cons);
         break;
@@ -531,12 +535,31 @@ public class Compiler {
 
     // Compile body of let statement if exists
     Cons letBody = cons.getCdr().getCdr();
+    if (letBody == null) {
+      mv.visitInsn(ACONST_NULL);
+    }
     while (letBody != null) {
       _compile(letBody.getCar());
       letBody = letBody.getCdr();
     }
 
     locals.popScope();
+  }
+
+  private void compileSetSpecialForm(Cons cons) {
+
+    Cons assignments = cons.getCdr();
+    while (assignments != null) {
+      Symbol symbol = (Symbol) assignments.getCar();
+      Object value = assignments.getCdr().getCar();
+      Object local = _compile(value);
+      if (!locals.contains(symbol.getValue())) {
+        throw new UndefinedSymbolException(symbol.getValue());
+      }
+      locals.add(symbol.getValue(), local);
+      mv.visitVarInsn(ASTORE, locals.get(symbol.getValue()).getLocalId());
+      assignments = assignments.getCdr().getCdr();
+    }
   }
 
   private void compileIfSpecialForm(Cons cons) {
@@ -586,6 +609,7 @@ public class Compiler {
         case "quote":
         case "if":
         case "let":
+        case "set":
         case "do":
         case ".":
           return true;

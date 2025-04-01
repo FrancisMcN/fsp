@@ -324,6 +324,31 @@ public class CompilerTest {
     }
 
     @Test
+    void testLetSpecialFormCreatesNewLocalVariable() {
+        assertEquals(10, eval("(let (x 10) x)"));
+    }
+
+    @Test
+    void testLetSpecialFormCreatesMultipleNewLocalVariables() {
+        assertEquals(new Symbol("a"), eval("(let (x 10 y 20 z 'a) 'a)"));
+    }
+
+    @Test
+    void testEmptyLetSpecialFormReturnsNil() {
+        assertNull(eval("(let (x 10))"));
+    }
+
+    @Test
+    void testSetSpecialFormOverwritesExistingLocalVariable() {
+        assertEquals(50, eval("(let (x 10) (set x 50) x)"));
+    }
+
+    @Test
+    void testSetSpecialFormCanOverwriteMultipleLocalVariables() {
+        assertEquals(100, eval("(let (x 10 y 20) (set x 50 y 100) y)"));
+    }
+
+    @Test
     void testDotSpecialFormWithGlobalSymbol() {
         assertEquals("HELLO WORLD", eval("(do (def x \"hello world\") (. x toUpperCase))"));
     }
