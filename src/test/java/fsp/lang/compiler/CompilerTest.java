@@ -174,6 +174,11 @@ public class CompilerTest {
     }
 
     @Test
+    void testNonLambdaInFirstConsCellReturnsNull() {
+        assertNull(eval("('a 1 2 3)"));
+    }
+
+    @Test
     void testArgmentsAreNotEvaluatedForMacro() {
         eval("(def identity-macro (macro (x) x))");
         Object output = eval("(macroexpand-1 '(identity-macro (+ 1 2 3)))");

@@ -284,8 +284,13 @@ public class Compiler {
         mv.visitInsn(DUP);
         mv.visitMethodInsn(INVOKESPECIAL, "fsp/lang/function/Apply", "<init>", "()V", false);
         compileLambdaCall(cons);
+      } else {
+        // If first item in cons isn't a lambda then throw away the result
+        // of compile(first)
+        mv.visitInsn(POP);
+        mv.visitInsn(ACONST_NULL);
       }
-      return cons;
+      return null;
     }
     if (first instanceof Symbol) {
       Symbol symbol = (Symbol) first;
