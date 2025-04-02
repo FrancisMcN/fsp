@@ -67,6 +67,9 @@ public class Scanner {
         case '\'':
           ptr++;
           return new Token(Type.QUOTE, "'", lineNo);
+        case ',':
+          ptr++;
+          return new Token(Type.COMMA, ",", lineNo);
         default:
           {
             if (Character.isDigit(c)) {

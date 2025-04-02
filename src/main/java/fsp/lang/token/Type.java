@@ -9,6 +9,7 @@ public enum Type {
   RPAREN,
   HASH,
   QUOTE,
+  COMMA,
   RMACRO,
   SYMBOL,
   STRING,

@@ -38,7 +38,7 @@ public class Parser {
     return expr();
   }
 
-  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | 'expr | list
+  // expr : ε | SYMBOL | STRING | BOOLEAN | NUMBER | 'expr | ,expr | list
   private Object expr() {
     Token token = scanner.peek();
 
@@ -70,6 +70,14 @@ public class Parser {
           scanner.next();
           Cons cons = new Cons();
           cons.setCar(new Symbol("quote"));
+          cons.setCdr(new Cons().setCar(expr()));
+          return cons;
+        }
+      case COMMA:
+        {
+          scanner.next();
+          Cons cons = new Cons();
+          cons.setCar(new Symbol("unquote"));
           cons.setCdr(new Cons().setCar(expr()));
           return cons;
         }
