@@ -18,6 +18,7 @@ import fsp.lang.function.Plus;
 import fsp.lang.function.Print;
 import fsp.lang.function.Read;
 import fsp.lang.function.Type;
+import fsp.lang.function.macro.DefMacro;
 import fsp.lang.function.macro.Func;
 import fsp.lang.type.Cons;
 import fsp.lang.type.Symbol;
@@ -437,6 +438,7 @@ public class CompilerTest {
         Environment.put(new Symbol("list"), new List());
         Environment.put(new Symbol("macroexpand-1"), new MacroExpand1());
         Environment.put(new Symbol("func"), new Func());
+        Environment.put(new Symbol("defmacro"), new DefMacro());
         Environment.put(new Symbol("+"), new Plus());
         Environment.put(new Symbol("-"), new Minus());
         Environment.put(new Symbol("="), new Equal());
