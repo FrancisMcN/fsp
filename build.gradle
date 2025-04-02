@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'ie.francis'
-version '0.0.8-alpha'
+version '0.0.9-alpha'
 
 repositories {
     mavenCentral()
