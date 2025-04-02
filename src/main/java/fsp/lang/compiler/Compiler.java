@@ -267,7 +267,7 @@ public class Compiler {
   }
 
   private Object compileCons(Cons cons) {
-    if (isQuoted()) {
+    if (isQuoted() && !Objects.equals(cons.getCar(), new Symbol("unquote"))) {
       compileConsWithoutEvaluating(cons);
       return cons;
     }
@@ -449,6 +449,9 @@ public class Compiler {
       case "quote":
         compileQuoteSpecialForm(cons);
         break;
+      case "unquote":
+        compileUnquoteSpecialForm(cons);
+        break;
       case "if":
         compileIfSpecialForm(cons);
         break;
@@ -602,6 +605,12 @@ public class Compiler {
     quoteDepth--;
   }
 
+  private void compileUnquoteSpecialForm(Cons cons) {
+    quoteDepth--;
+    _compile(cons.getCdr().getCar());
+    quoteDepth++;
+  }
+
   private boolean isSpecialForm(Cons cons) {
     Object first = cons.getCar();
     if (first instanceof Symbol) {
@@ -611,6 +620,7 @@ public class Compiler {
         case "macro":
         case "def":
         case "quote":
+        case "unquote":
         case "if":
         case "let":
         case "set":

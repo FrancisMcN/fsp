@@ -144,6 +144,16 @@ public class CompilerTest {
     }
 
     @Test
+    void testUnquoteEvaluatesQuotedForm() {
+        assertEquals(6, eval("(unquote (quote (+ 1 2 3)))"));
+    }
+
+    @Test
+    void testCommaIsShortForUnquote() {
+        assertEquals(6, eval("',(+ 1 2 3)"));
+    }
+
+    @Test
     void testSymbolsAreNotResolvedUntilRuntime() {
         assertNull(eval("(func hello () (non-existant-function 1 2 3))"));
     }
